@@ -1,0 +1,19 @@
+
+RL_MaxIter 500
+RL_ScaleFactor 1000.0
+RL_Epsilon 0.0001
+
+DummyInitialWeight 0.1
+DummyCompatibility 
+ExclusiveCompatibility 
+CrossCompatibility 
+RepeatCompatibility 0
+OrderCompatibility 1/dist
+ParallelCompatibility 1/dist
+MaximumDistance 0
+
+AddIFS true
+AddLOOPS true
+
+
+
