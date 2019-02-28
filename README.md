@@ -14,11 +14,16 @@ The code includes the [pugixml parser](https://pugixml.org/) which is distribute
 
 jbpt
 make
-
+TO DO
+TO DO
+TO DO
 
 ## How to use
 
 -data
 -train
 -test
+TO DO
+TO DO
+TO DO
 
