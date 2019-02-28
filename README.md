@@ -1,7 +1,10 @@
 # RL-align
-##Alignment between log traces and formal process models using relaxation labeling 
 
 RL-align performs conformance checking aligning log traces with a PM Petri net.
+It uses relaxation labeling (RL) constraint satisfaction algorithm to perform the alignment. 
+
+Obtained alignments may be suboptimal or unfitting. However, the computation time is linear with the traec length, offering computation times about two orders of magnitude faster than other state-of-the-art methods.
+
 
 ## License
 RL-align is distributed under an [Affero GPL license](LICENSE).
