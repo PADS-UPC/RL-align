@@ -44,7 +44,6 @@ Folder ``data`` contains data files to test the aligner:
   - ``unfoldings`` :  Unfoldings computed using [``punf``](http://homepages.cs.ncl.ac.uk/victor.khomenko/home.formal/tools/UnfoldingTools/current/). These are the files used by the aligner.
   - ``logs`` : XES trace log files.
   - ``alignments`` : Reference alignments used to evaluate the results.
-  - ``results`` : empty folder where results will be stored.
    
 You can add you own models and traces, as long as the filenames are consistent, and they are in the right folders.
 
