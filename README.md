@@ -51,7 +51,12 @@ You can add you own models and traces, as long as the filenames are consistent, 
 
 ### Preprocess your models
 
+Some preprocessing is required on your target models before runnig the aligner.
+The preprocess consists of computing the Behavioural Profile and the shortest paths between model nodes.
 
+This preprocess will look in ``data/unfoldings`` folder and create ``.bp`` and ``.paths`` files for each ``.bp.pnml`` model found there.
+
+This is required only once. After that you can run the aligner as many times as needed.
 
 ### Run the aligner
 
@@ -61,7 +66,7 @@ The aligner can be run providing a configuration file and a model.
 ```
 Two example configuration files are provided: File ``config.15.5.-100.-20.-300.cfg`` will produce alignments closer to optimal cost, but may fail to find fitting alignments for more cases. On the contrary ``config.5.5.-500.-300.-400.cfg`` will produce fitting alignments for more traces, but with less optimal costs.
 
-The model file must have extension ``bp.pnml``. The ``execute.sh`` script expects the trace files to be in ``data/logs`` and have the same name than the model, but with extension ``.xes``.
+The model file must be in ``data/unfoldings`` and have extension ``.bp.pnml``. Behavioural profiles and shortest paths should be already precomputed and reside in the same folder. The ``execute.sh`` script expects the trace files to be in ``data/logs`` and have the same name than the model, but with extension ``.xes``.
 
 E.g., to align one model with its corresponding log:
 ```
@@ -83,8 +88,6 @@ E.g.:
 ```
    bin/eval.py data/alignments data/results/output-test.15.5.-100.-20.-300
 ```
-
-
 
 
 

@@ -46,10 +46,6 @@ ComputeBP.class : ComputeBP.java
 	javac -cp ../jbpt/jbpt-bp-0.3.1.jar:../jbpt/jbpt-core-0.3.1.jar:../jbpt/jbpt-petri-0.3.1.jar ComputeBP.java
 	cp ComputeBP.class ../bin
 
-UnfoldPN.class : UnfoldPN.java
-	javac -cp ../jbpt/jbpt-bp-0.3.1.jar:../jbpt/jbpt-core-0.3.1.jar:../jbpt/jbpt-petri-0.3.1.jar UnfoldPN.java
-	cp UnfoldPN.class ../bin
-
 clean:
 	rm -f align paths dump *.o *.a *.class
 	rm -f ../bin/align ../bin/paths ../bin/dump ../bin/*.class

@@ -1,8 +1,6 @@
 
 gold alignments in this folder are produced by:
 
-M5.gold: produced by A*
-
 ML4.gold: produced by ILPSDP
 ML5.gold: produced by ILPSDP
 pr[CDEFG]m6.gold: produced by ILPSDP
@@ -10,4 +8,3 @@ pr[CDEFG]m6.gold: produced by ILPSDP
 all others: produced by ProM
 
 
-see bin/prepare-data.sh for details
