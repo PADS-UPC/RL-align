@@ -16,7 +16,7 @@ To run RL-align you'll need a standard linux box with g++5 or later. You also wi
 
 ### Install jbpt
 
-Behavioural profiles are computed using [``jbpt`` library](https://github.com/jbpt/codebase), so you need to install some components.
+Behavioural profiles are computed using [``jbpt``](https://github.com/jbpt/codebase), so you need to install some components.
 
 Just download the following libraries to ``jbpt`` folder:
  * [``jbpt-bp-0.3.1.jar``](https://mvnrepository.com/artifact/org.jbpt/jbpt-bp/0.3.1)
