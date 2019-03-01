@@ -41,7 +41,7 @@ Now you are ready to use the software.
 Folder ``data`` contains data files to test the aligner:
 
   - ``originals`` :  Original pnml models
-  - ``unfoldings`` :  Unfoldings computed using XXXXX
+  - ``unfoldings`` :  Unfoldings computed using XXXXX. These are the files used by the aligner
   - ``logs`` : XES trace log files 
   - ``alignments`` : Reference alignments used to evaluate the results
   - ``results`` : empty folder where results will be stored
@@ -70,22 +70,22 @@ The model file must be in ``data/unfoldings`` and have extension ``.bp.pnml``. B
 
 E.g., to align one model with its corresponding log:
 ```
-   bin/execute.sh config/config/config.15.5.-100.-20.-300.cfg test data/unfoldigns/M1.bp.pnml
+   bin/execute.sh config/config/config.15.5.-100.-20.-300.cfg data/unfoldigns/M1.bp.pnml
 ```
 You can also align several models in parallel (quotes are important):
 ```
-   bin/execute.sh config/config/config.15.5.-100.-20.-300.cfg test "data/unfoldigns/M1.bp.pnml data/unfoldigns/M3.bp.pnml data/unfoldigns/M3.bp.pnml"
+   bin/execute.sh config/config/config.15.5.-100.-20.-300.cfg "data/unfoldigns/M1.bp.pnml data/unfoldigns/M3.bp.pnml data/unfoldigns/M3.bp.pnml"
 ```
 
 
-This will leave the results in e.g. ``data/results/output-test.15.5.-100.-20.-300``. For each aligned model, a file will be created containing all alignments.
+This will leave the results in e.g. ``data/results/output.15.5.-100.-20.-300``. For each aligned model, a file will be created containing all alignments.
 
-If reference alignments are available (they should be in ``data/alignmens`` and have the same name than the model with extension ``.gold``) performance can be evaluated with:
+If reference alignments are available (they should be in ``data/alignments`` and have the same name than the model with extension ``.gold``) performance can be evaluated with:
 ```
    bin/eval.py reference-dir results-dir
 ```
 E.g.:
 ```
-   bin/eval.py data/alignments data/results/output-test.15.5.-100.-20.-300
+   bin/eval.py data/alignments data/results/output.15.5.-100.-20.-300
 ```
 
