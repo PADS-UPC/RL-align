@@ -41,7 +41,7 @@ Now you are ready to use the software.
 Folder ``data`` contains data files to test the aligner:
 
   - ``originals`` :  Original pnml models. Provided for reference, not actually used
-  - ``unfoldings`` :  Unfoldings computed using XXXXX. These are the files used by the aligner.
+  - ``unfoldings`` :  Unfoldings computed using [``punf``](http://homepages.cs.ncl.ac.uk/victor.khomenko/home.formal/tools/UnfoldingTools/current/). These are the files used by the aligner.
   - ``logs`` : XES trace log files.
   - ``alignments`` : Reference alignments used to evaluate the results.
   - ``results`` : empty folder where results will be stored.
