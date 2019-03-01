@@ -40,11 +40,11 @@ Now you are ready to use the software.
 
 Folder ``data`` contains data files to test the aligner:
 
-  - ``originals`` :  Original pnml models
-  - ``unfoldings`` :  Unfoldings computed using XXXXX. These are the files used by the aligner
-  - ``logs`` : XES trace log files 
-  - ``alignments`` : Reference alignments used to evaluate the results
-  - ``results`` : empty folder where results will be stored
+  - ``originals`` :  Original pnml models. Provided for reference, not actually used
+  - ``unfoldings`` :  Unfoldings computed using XXXXX. These are the files used by the aligner.
+  - ``logs`` : XES trace log files.
+  - ``alignments`` : Reference alignments used to evaluate the results.
+  - ``results`` : empty folder where results will be stored.
    
 You can add you own models and traces, as long as the filenames are consistent, and they are in the right folders.
 
@@ -54,7 +54,7 @@ You can add you own models and traces, as long as the filenames are consistent, 
 Some preprocessing is required on your target models before runnig the aligner.
 The preprocess consists of computing the Behavioural Profile and the shortest paths between model nodes.
 
-This preprocess will look in ``data/unfoldings`` folder and create ``.bp`` and ``.paths`` files for each ``.bp.pnml`` model found there.
+This preprocess will look in ``data/unfoldings`` folder and create ``.bp`` and ``.path`` files for each ``.bp.pnml`` model found there.
 
 This is required only once. After that you can run the aligner as many times as needed.
 
