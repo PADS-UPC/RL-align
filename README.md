@@ -40,11 +40,11 @@ Now you are ready to use the software.
 
 Folder ``data`` contains data files to test the aligner:
 
-   ``originals`` :  Original pnml models
-   ``unfoldings`` :  Unfoldings computed using XXXXX
-   ``logs`` : XES trace log files 
-   ``alignments`` : Reference alignments used to evaluate the results
-   ``results`` : empty folder where results will be stored
+  ``originals`` :  Original pnml models
+  ``unfoldings`` :  Unfoldings computed using XXXXX
+  ``logs`` : XES trace log files 
+  ``alignments`` : Reference alignments used to evaluate the results
+  ``results`` : empty folder where results will be stored
    
 You can add you own models and traces, as long as the filenames are consistent, and they are in the right folders.
    
