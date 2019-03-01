@@ -8,12 +8,8 @@
 # It is recommended to run this paralellized in a HPC cluster
 
 DATE=$1
-dummy=$2
-excl=$3
-cross=$4
 
 cd $(dirname $0)
-rm -f data/results/train/stats.$DATE.$cross.$dummy.$excl
 
 TRAIN="data/alignments/M*[13579].gold data/alignments/pr[ACEG]*.gold"
 TEST="data/alignments/M*[02468].gold data/alignments/pr[BDF]*.gold"
@@ -21,6 +17,8 @@ TEST="data/alignments/M*[02468].gold data/alignments/pr[BDF]*.gold"
 for cross in -50 -100 -150 -200 -300 -400 -500; do
    for excl in -20 -40 -60 -80 -100 -120 -140 -160; do
       for dummy in -20 -40 -60 -80 -100 -120 -140 -160; do
+         ## file to accumulate results for this combination prefix
+         rm -f data/results/train/stats.$DATE.$cross.$dummy.$excl
          for order in 5 15 25 40 50 60; do
             for paral in 5 15 25 40 50 60; do
                  cat config/config-base \
