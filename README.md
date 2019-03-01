@@ -26,10 +26,10 @@ Just download the following libraries to ``jbpt`` folder:
 ### Compile RL-align
 
 Go to folder ``src`` and compile RL-align components:
-´´´
+```
    cd src
    make
-´´´
+```
 
 Now you are ready to use the software.
 
