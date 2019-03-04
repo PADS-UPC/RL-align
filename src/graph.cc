@@ -121,8 +121,7 @@ graph::graph(const string &fname, NetVariant which, bool addIFS, bool addLOOPS) 
 	  // we look for a non-leaf node with the same name (which is not the node itself)
 	  if (t!=nd.id and not is_leaf(t)) {
 	    if (found) {
-	      // we already had one, this is the second. Shouldn't happen. Abort
-	      // (We could stop, but we check them all to make sure the model is consistent)
+	      // we already had one, this is the second. Shouldn't happen. Abort.
 	      ERROR_CRASH("ERROR: More than one non-leaf node found with name " << nd.name);
 	    }
 	    
@@ -144,28 +143,32 @@ graph::graph(const string &fname, NetVariant which, bool addIFS, bool addLOOPS) 
 
       // replace arcs arriving to nd with arcs to rid.
       TRACE(6,"Redirecting "<<to_be_replaced.size()<<" cut-off nodes.");
-      for (auto p : to_be_replaced) {
-	string oldnode = p.first;
-	string newnode = p.second; 
-	set<string> pred = get_in_edges(oldnode);
-	for (auto n : pred) {
-	  remove_edge(n, oldnode);
-	  add_edge(n, newnode);
-	}
-	remove_node(oldnode);    
-      }
+      for (auto p : to_be_replaced)
+        replace_node(p.first,p.second);
 
       // Locate initial and final node
       for (auto n : nodes_by_id) {
 	if (get_in_edges(n.first).empty()) {
+          TRACE(6,"Adding initial node "<<n.first);
 	  if (initial_nodes.empty()) initial_nodes.insert(n.first);
 	  else { ERROR_CRASH("More than one initial node detected ("<< *initial_nodes.begin() <<", "<< n.first <<")."); }
 	}
 	if (get_out_edges(n.first).empty()) {
 	  final_nodes.insert(n.first);
-	  //else { ERROR_CRASH("More than one final node detected ("<< *final_nodes.begin() <<", "<< n.first <<")."); }
-	}      
+	}
       }
+      
+      // if more than one final node, unify them with the first in the list.
+      TRACE(6,"Final nodes: [" << set2string(final_nodes) << "]");
+      set<string> fn = final_nodes; // copy to avoid iterator break when deleting nodes
+      auto f = fn.begin();
+      string f1 = *f;
+      ++f;
+      while (f != fn.end()) {
+        replace_node(*f, f1);
+        ++f;
+      }
+      TRACE(6,"Unified "<<fn.size()<<" final nodes to ["<< set2string(final_nodes) << "]");
     }
 
 }
@@ -215,13 +218,28 @@ void graph::add_node(const node &n) {
 void graph::remove_node(const string &id) {
   string name = get_node(id).name;
   remove_from_multimap(nodes_by_name, name, id);
-  nodes_by_id.erase(id); 
+  nodes_by_id.erase(id);
+  initial_nodes.erase(id); // (just in case it was there)
+  final_nodes.erase(id);
 }
 
 /// get number of nodes in the graph
 
 int graph::get_num_nodes() const {
   return nodes_by_id.size();
+}
+
+/// remove 'oldnode' from the graph, and make all incoming transitions go to newnode.
+/// 'oldnode' must be a leaf.
+
+void graph::replace_node(const string &oldnode, const string &newnode) {
+  TRACE(6,"Redirecting "<<oldnode<<" to "<<newnode);
+  set<string> pred = get_in_edges(oldnode);
+  for (auto n : pred) {
+    remove_edge(n, oldnode);
+    add_edge(n, newnode);
+  }
+  remove_node(oldnode);    
 }
 
 

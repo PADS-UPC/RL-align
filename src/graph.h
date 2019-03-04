@@ -77,6 +77,7 @@ class graph {
      void add_edge(const std::string &src, const std::string &targ);
      void remove_node(const std::string &id);
      void remove_edge(const std::string &src, const std::string &targ);
+     void replace_node(const std::string &oldnode, const std::string &newnode);
 
      void compute_distances();
      void load_distances(const std::string &fname);
