@@ -1,3 +1,4 @@
+
 # RL-align
 
 RL-align performs conformance checking aligning log traces with a PM Petri net.
@@ -5,6 +6,16 @@ It uses relaxation labeling (RL) constraint satisfaction algorithm to perform th
 
 Obtained alignments may be suboptimal or unfitting. However, the computation time is linear with the traec length, offering computation times about two orders of magnitude faster than other state-of-the-art methods.
 
+This software is further described in the following papers:
+
+Version 1.0 (tag ``v1.0`` in gitHub)
+   Padró, L., Carmona, J., 2019.
+   Approximate computation of alignments of business processes through relaxation labelling,
+   in: Business Process Management - 17th International Conference, BPM 2019, pp. 250–267.
+   Vienna, Austria, September 1-6, 2019
+
+Version 2.0 (tag ``v2.0`` in gitHub)
+   Submitted
 
 ## License
 RL-align is distributed under an [Affero GPL license](LICENSE).
@@ -63,21 +74,20 @@ The aligner can be run providing a configuration file and a model.
 ```
    bin/execute.sh configfile test model
 ```
-Two example configuration files are provided: File ``config.15.5.-100.-20.-300.cfg`` will produce alignments closer to optimal cost, but may fail to find fitting alignments for more cases. On the contrary ``config.5.5.-500.-300.-400.cfg`` will produce fitting alignments for more traces, but with less optimal costs.
-
+On example configuration file is provided: ``config.15.5.-100.-150.-300.cfg``, which produces alignment lower costs on the used tuning dataset
 The model file must be in ``data/unfoldings`` and have extension ``.bp.pnml``. Behavioural profiles and shortest paths should be already precomputed and reside in the same folder. The ``execute.sh`` script expects the trace files to be in ``data/logs`` and have the same name than the model, but with extension ``.xes``.
 
 E.g., to align one model with its corresponding log:
 ```
-   bin/execute.sh config/config/config.15.5.-100.-20.-300.cfg data/unfoldigns/M1.bp.pnml
+   bin/execute.sh config/config/config.15.5.-100.-150.-300.cfg data/unfoldigns/M1.bp.pnml
 ```
 You can also align several models in parallel (quotes are important):
 ```
-   bin/execute.sh config/config/config.15.5.-100.-20.-300.cfg "data/unfoldigns/M1.bp.pnml data/unfoldigns/M3.bp.pnml data/unfoldigns/M3.bp.pnml"
+   bin/execute.sh config/config/config.15.5.-100.-150.-300.cfg "data/unfoldigns/M1.bp.pnml data/unfoldigns/M3.bp.pnml data/unfoldigns/M3.bp.pnml"
 ```
 
 
-This will leave the results in e.g. ``data/results/output.15.5.-100.-20.-300``. For each aligned model, a file will be created containing all alignments.
+This will leave the results in e.g. ``data/results/output.15.5.-100.-150.-300``. For each aligned model, a file will be created containing all alignments.
 
 If reference alignments are available (they should be in ``data/alignments`` and have the same name than the model with extension ``.gold``) performance can be evaluated with:
 ```
@@ -85,6 +95,6 @@ If reference alignments are available (they should be in ``data/alignments`` and
 ```
 E.g.:
 ```
-   bin/eval.py data/alignments data/results/output.15.5.-100.-20.-300
+   bin/eval.py data/alignments data/results/output.15.5.-100.-150.-300
 ```
 
