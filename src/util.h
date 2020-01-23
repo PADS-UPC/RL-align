@@ -29,6 +29,8 @@
 #define _UTIL_H
 
 #include <set>
+#include <list>
+#include <vector>
 #include <string>
 
 std::set<std::string> difference_set(const std::set<std::string> &big, const std::set<std::string> &small);
@@ -36,5 +38,6 @@ std::set<std::string> union_set(const std::set<std::string> &big, const std::set
 
 std::string set2string(const std::set<std::string> &ss);
 std::string vector2string(const std::vector<std::string> &ss);
+std::string list2string(const std::list<std::string> &ss);
 
 #endif

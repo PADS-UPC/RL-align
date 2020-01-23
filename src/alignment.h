@@ -40,8 +40,8 @@ class align_elem {
   ~align_elem();
 
   std::string dump(bool id=false) const;
-
-  bool operator<(const align_elem &a) const;
+  bool operator<(const align_elem &e) const;
+  bool operator==(const align_elem &e) const;
 };
 
 

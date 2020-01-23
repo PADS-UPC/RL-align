@@ -33,14 +33,22 @@ align_elem::align_elem(const string &i, const string &n, const string &t) : id(i
 
 align_elem::~align_elem() {}
 
-string align_elem::dump(bool use_id) const {
-  return this->type + (use_id? this->id : this->name);
+string align_elem::dump(bool show_id) const {
+  return this->type + this->name + (show_id ? "("+this->id+")" : "");
 }
 
-bool align_elem::operator<(const align_elem &a) const {
-  return this->type < a.type;
+bool align_elem::operator<(const align_elem &e) const {
+  bool b;
+  if (this->type < e.type) b = true;
+  else if (this->type == e.type and this->name < e.name) b = true;
+  else if (this->type == e.type and this->name == e.name and this->id < e.id) b = true;
+  else b = false;
+  return b;
 }
 
+bool align_elem::operator==(const align_elem &e) const {
+  return (this->type == e.type and this->name == e.name and this->id == e.id);
+}
 
 void alignment::purge() {
   auto prev = this->begin();
@@ -62,3 +70,5 @@ string alignment::dump(bool id) const {
     s += "|" + e.dump(id);
   return (s.length()>1 ? s.substr(1) : s);
 }
+
+

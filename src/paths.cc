@@ -31,6 +31,7 @@
 #include "graph.h"
 #include "config.h"
 #include "traces.h"
+#include "util.h"
 #define MOD_TRACENAME "PATHS"
 #define MOD_TRACECODE MAIN_TRACE
 
@@ -205,70 +206,167 @@ path required(const graph &g, string src, string targ, list<string> &seen, int d
 }
 
 
+// check if the path pik+pkj includes a parallel section. If it does, it must be complete.
+
+bool valid_path(const string &i, map<string,path>::iterator pik, map<string,path>::iterator pkj, const map<string,string> &parallels, const map<string,path> &paths) {
+
+  list<string> s;
+  s.push_back(i);
+  s.insert(s.end(), pik->second.elems.begin(), pik->second.elems.end());
+  s.insert(s.end(), pkj->second.elems.begin(), pkj->second.elems.end());
+
+  bool ok = true;
+  for (auto e = s.begin(); e!=s.end() and ok; ++e) {
+    auto p = parallels.find(*e);
+    if (p != parallels.end()) {
+      string split = p->first;
+      string join = p->second;
+      size_t n = 0;
+      auto f = e;
+      while (f!=s.end() and *f!=join) {
+        ++f;
+        ++n;
+      }
+      
+      // parallel limits where there, but middle was not complete, do not use this path.
+      if (f!=s.end() and n < paths.find(split+":::"+join)->second.elems.size()) 
+           return false;
+    }
+  }
+  
+  return true;
+}
+
 /// ===========================
 /// ========= MAIN ============
 /// ===========================
 
 int main(int argc, char *argv[]) {
-
+  
   if (argc<4) {
     ERROR_CRASH("Usage: " << argv[0] << " model.pnml (original|unfolding) ifs loops [tracelevel]");
   }
-
+  
   graph::NetVariant which = (string(argv[2]) == "original" ? graph::ORIGINAL : graph::UNFOLDING);
   bool ifs = string(argv[3]) != "false";
   bool loops = string(argv[4]) != "false";
-
+  
   traces::set_tracing(argc>5 ? string(argv[5]) : "");
-
+  
   graph g(argv[1], which, ifs, loops);  // load XML model
   if (which==graph::UNFOLDING)
     g.add_node(node(node::TRANSITION, graph::DUMMY, graph::DUMMY));  // add "dummy" node
-
-  map<string,list<string>> paths;
-  string src, targ;
-  list<string> seen;
+  
+  
   list<string> nodes = g.get_nodes_by_id();
-  //while (cin >> src>> targ) {
-  for (auto src : nodes) {
-    // skip places unless initial and final
-    //if (g.get_node(src).type == node::PLACE and g.get_node(src).id!=g.get_initial_node())
-    //  continue;
-
-    for (auto targ : nodes) {
-      //if (g.get_node(targ).type == node::PLACE and g.get_node(targ).id!=g.get_final_node())
-      //  continue;
-
-      path r;
-      TRACE(1, "MAIN ----  " << src << " -> " << targ);
-
-      // src!=targ, normal case, find a path
-      if (src != targ)         
-        r = required(g, src, targ, seen, 0);
+  map<string,path> paths;
+  map<string,string> parallels;
       
-      // src == targ, find a path of length>0 (i.e. see if there is a loop)
-      else if (g.get_node(src).type == node::TRANSITION and src!=graph::DUMMY) 
-        r = parallel_join(g, src, targ, seen, false, 0);
-      
-      else // node.type == PLACE
-        r = exclusive_join(g, src, targ, seen, false, 0);
-      
-      // print result
+  for (auto n : nodes) {
+    // init path matrix with direct edges
+    set<string> succ = g.get_out_edges(n);
+    for (auto s : succ) {
+      path p;
+      p.elems.push_back(s);
+      paths[n+":::"+s] = p;
+    }
+
+    // node to self, cost zero
+    path p;
+    paths[n+":::"+n] = p;
+
+    // for parallel splits, brute-force compute path to matching parallel split
+    if (g.is_parallel_split(n)) { 
+      string s = g.find_matching_join(n);
+      list<string> seen;
+      path p = required(g, n, s, seen, 0);
+      paths[n+":::"+s] = p;
+      parallels[n] = s;
+    }
+  }
+
+  // adapted floyd algorithm
+  for (auto k : nodes) {
+    for (auto i : nodes) {
+      for (auto j : nodes) {
+        // if i-j is a complete parallel block, do not update cost. (this is the only adaptation needed)
+        auto par = parallels.find(i);
+        if (par!=parallels.end() and par->second==j) continue;
+
+        // find current path from i to j
+        auto pij = paths.find(i+":::"+j);
+        // find paths from i to k, and from k to j
+        auto pik = paths.find(i+":::"+k);
+        auto pkj = paths.find(k+":::"+j);
+        // if pik and pij exist and are better than pij, replace path
+        if (pik != paths.end() and pkj != paths.end() and valid_path(i,pik,pkj,parallels,paths)) {
+          if (pij == paths.end() or pij->second.elems.size() > pik->second.elems.size()+pkj->second.elems.size()) {
+            path p;
+            p.elems.insert(p.elems.end(), pik->second.elems.begin(), pik->second.elems.end());
+            p.elems.insert(p.elems.end(), pkj->second.elems.begin(), pkj->second.elems.end());
+            paths[i+":::"+j] = p;
+          }
+        }
+      }
+    }
+  }
+
+  // we want paths from one note to itself to capture loops, if there are any
+  for (auto i : nodes) {
+    bool found = false;
+    if (g.is_parallel_split(i)){
+      // if it is a parallel split, the best path i->i is running the whole parallel and then goind from the join to the split again
+      string s = g.find_matching_join(i);
+      auto psi= paths.find(s+":::"+i);
+      if (psi!=paths.end()) {
+        path p;
+        auto pis = paths.find(i+":::"+s);
+        p.elems.insert(p.elems.end(), pis->second.elems.begin(), pis->second.elems.end());
+        p.elems.insert(p.elems.end(), psi->second.elems.begin(), psi->second.elems.end());
+        paths[i+":::"+i] = p;
+        found = true;
+      }
+    }
+    else {
+      // not a parallel split. The best path to i->i is the best path from any successor of i
+      set<string> succ = g.get_out_edges(i);
+      size_t min = g.get_num_nodes()*2;
+      string best;
+      for (auto s : succ) {
+        auto psi = paths.find(s+":::"+i);
+        if (psi!=paths.end() and psi->second.elems.size()<min) {
+          min = psi->second.elems.size();
+          best = s;
+        }
+      }
+      if (best!="") {
+        path p = paths.find(best+":::"+i)->second;
+        p.elems.push_front(best);
+        paths[i+":::"+i] = p;
+        found = true;
+      }
+    }
+    if (not found) paths.erase(i+":::"+i);
+  }
+
+  
+  // print result
+  for (auto i : nodes) {
+    for (auto j : nodes) {
       int nn=0;
       string s = "";
-      if (r.found) {
-        for (auto p : r.elems) {
-          //if (g.get_node(p).type==node::TRANSITION or g.get_node(p).id==g.get_final_node()) {
+      auto pij = paths.find(i+":::"+j);
+      if (pij != paths.end()) {
+        for (auto p : pij->second.elems) {
             s +=  " " + p;
             ++nn;
-          //}
         }
         // remove last node in the sequence (just a repetition of targ)
-        auto k = s.find(" "+targ);
+        auto k = s.find(" "+j);
         s = s.substr(0,k);
       }
 
-      cout << src << " " << targ << " " << nn-1 << s << endl;
+      cout << i << " " << j << " " << nn-1 << s << endl;
     }
   }
 

@@ -11,6 +11,19 @@
 #include "pugixml.hpp"
 #include "alignment.h"
 
+
+// auxiliar class for BFS path searchs
+class search_state {
+  public:
+     std::set<std::string> open_places;
+     std::list<std::string> path;
+     int distance;
+     search_state(const std::set<std::string> &op, const std::list<std::string> &pth, int dist);
+     ~search_state();
+     bool operator<(const search_state &p) const;
+};
+
+
 class node {
   public:
     typedef enum {PLACE, TRANSITION} NodeType;
@@ -68,6 +81,7 @@ class graph {
    public:
      // dummy label
      static const std::string DUMMY;
+     static const int BFS_LIMIT;
 
      graph();
      graph(const std::string &fname, NetVariant which, bool addIFS=false, bool addLOOPS=false);
@@ -104,6 +118,9 @@ class graph {
      bool accessible(const std::string &src, const std::string &targ) const;
      bool path_exists(const std::string &src, const std::string &targ) const;
      double distance(const std::string &id1, const std::string &id2) const;
+     int shortest_distance(const std::set<std::string> &open, const std::string &target) const;
+     int average_distance(const std::set<std::string> &open, const std::string &target) const;
+
      std::list<std::string> path(const std::string &id1, const std::string &id2) const;
      bool is_acyclic() const;
      bool is_fitting(std::set<std::string> &open,
@@ -112,8 +129,13 @@ class graph {
                      alignment::iterator &curr,
                      bool skip_unexpected=false) const;
 
-     std::list<align_elem> possible_moves(const std::set<std::string> &open, const std::string &event) const;
+     std::set<align_elem> possible_moves(const std::set<std::string> &open, const std::string &event) const;
      std::set<std::string> simulate_move(const std::set<std::string> &open, const align_elem &m) const;
+
+     std::set<std::string> possible_transitions(const std::set<std::string> &open, std::string target="") const;
+     bool is_final(const std::set<std::string> &open) const;     /// see if a PN configuration is final
+     std::set<std::string> fire_transition(const std::set<std::string> &open, const std::string &t) const;
+     bool find_path(const std::set<std::string> &open, const std::string &target, std::list<std::string> &path) const;
 
      std::string dump() const;
 };

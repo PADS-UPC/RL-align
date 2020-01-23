@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
 				 : graph::UNFOLDING);
 
 
+  //traces::set_tracing("3:0x3");
   graph g(argv[1], which_net, string(argv[3])=="true", string(argv[4])=="true"); // load XML model
 
   cout << g.dump();

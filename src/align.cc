@@ -57,14 +57,14 @@ void add_variable_labels(problem & prob,
 
   // add possible alignments for each event
   for (size_t nv=0; nv<trace.size(); ++nv) {
-    TRACE(1, "Adding variable " << nv << " " << trace[nv]);
+    TRACE(2, "Adding variable " << nv << " " << trace[nv]);
     prob.set_var_name(nv, trace[nv]);
     // get candidates to be aligned
     list<string> labels = g.get_nodes_by_name(trace[nv]);
     // add them as labels for variable nv
     int nl=0;
     for (auto id : labels) {
-      TRACE(1, "     label " << nl << " " << id);
+      TRACE(2, "     label " << nl << " " << id);
       prob.add_label(nv, (1.0-cfg->DUMMY_INITIAL_WEIGHT)/labels.size(), id);
       ++nl;
     }
@@ -198,25 +198,27 @@ void add_constraints(problem & prob,
 
             double dLR = -1;
             if (bptf.get_relation(tL,tR)==behavioral_profile::INTERLEAVED) dLR = 0;
-            else if (g.path_exists(tL,tR)) dLR = g.path(tL,tR).size()/2;
+            else if (g.path_exists(tL,tR)) dLR = g.path(tL,tR).size()/2.0;
             //else dLR = g.get_num_nodes()*2;
 
             double dLe = -1;
             if (bptf.get_relation(tL,te)==behavioral_profile::INTERLEAVED) dLe = 0;
-            else if (g.path_exists(tL,te)) dLe = g.path(tL,te).size()/2;
+            else if (g.path_exists(tL,te)) dLe = g.path(tL,te).size()/2.0;
             //else dLe = g.get_num_nodes()*2;
 
             double deR = -1;
             if (bptf.get_relation(te,tR)==behavioral_profile::INTERLEAVED) deR = 0;
-            else if (g.path_exists(te,tR)) deR = g.path(te,tR).size()/2;
+            else if (g.path_exists(te,tR)) deR = g.path(te,tR).size()/2.0;
             //else deR = g.get_num_nodes()*2;
             
-            TRACE(4, "checking Dummy compatibility constraint "<<te<<" "<<dLR<<" "<<dLe<<" "<<deR );
+            TRACE(5, "checking Dummy compatibility constraint "<<tL<<"-["<<te<<"]-"<<tR<<" "<<dLR<<" "<<dLe<<" "<<deR );
             if (dLR>=0 and dLe>=0 and deR>=0 and dLR < dLe+deR) {
               TRACE(4, "Dummy compatibility constraint");
-              //prob.add_constraint(ev, lb, {{make_pair(evL,lbL)},{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
-              prob.add_constraint(ev, lb, {{make_pair(evL,lbL)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
-              prob.add_constraint(ev, lb, {{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
+              prob.add_constraint(ev, lb, {{make_pair(evL,lbL)},{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
+              // COMPTE AQUI!! Aixo separat no te massa sentit, perque un dels dos costats pot estar be!
+              //                (no se perque ho vaig deixar aixi....)
+              //prob.add_constraint(ev, lb, {{make_pair(evL,lbL)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
+              //prob.add_constraint(ev, lb, {{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
             }
           }
         }
@@ -238,8 +240,10 @@ problem create_labeling_problem(const vector<string> &trace,
   // each trace event is a variable in our alignment problem
   problem prob(trace.size());
   // add possible alignments for each event (i.e. possible labels for each variable)
+  TRACE(1, "Adding variables ");
   add_variable_labels(prob,trace,g);
   // create constraints according to BP
+  TRACE(1, "Adding constraints ");
   add_constraints(prob,trace,bp,bptf,g); 
       
   return prob;
@@ -250,7 +254,7 @@ problem create_labeling_problem(const vector<string> &trace,
 ///////////////////////////////////////////////////////
 /// load traces from a .xes file
 
-list<pair<string,vector<string>>> load_traces(const string &fname) {
+list<pair<string,vector<string>>> load_traces(const string &fname, const graph &g) {
     // open input file
     pugi::xml_document xmldoc;
     xmldoc.load_file(fname.c_str(), pugi::parse_default|pugi::parse_ws_pcdata);
@@ -261,6 +265,7 @@ list<pair<string,vector<string>>> load_traces(const string &fname) {
     // get each "trace" node under "log"
     pugi::xml_node trace = xmldoc.child("log").child("trace");
     
+    map<string,int> warned;
     while (trace) {
       string trace_id = trace.find_child_by_attribute("string","key","concept:name").attribute("value").value();
       TRACE(7, "found new trace id="<<trace_id);
@@ -269,16 +274,78 @@ list<pair<string,vector<string>>> load_traces(const string &fname) {
       pugi::xml_node event = trace.child("event");
       while (event) {
         pugi::xml_node name = event.find_child_by_attribute("string","key","concept:name");
-        evs.push_back(name.attribute("value").value());
-        TRACE(7, "   read event "<<name.attribute("value").value());
+        string evname = name.attribute("value").value();
+        evs.push_back(evname);
+        TRACE(7, "   read event "<<evname);
+        if (g.get_nodes_by_name(evname).empty()) {
+          if (warned.find(evname)==warned.end()) warned.insert(make_pair(evname,1));          
+          else warned[evname] += 1;
+        }
         event = event.next_sibling("event");
       }
       result.push_back(make_pair(trace_id,evs));
 
       trace = trace.next_sibling("trace");
     }
+
+    for (auto w : warned) {
+      WARNING("WARNING: Event name '"<<w.first<<"' occurred "<<w.second<<" times in the log, but no matching model task was found.");
+    }
     
     return result;   
+}
+
+
+///////////////////////////////////////////////////////
+/// create an alignment from a solved RL problem
+
+alignment RL_to_alignment(const graph& g, const pair<string,vector<string>> &trace, const problem& prob) {
+  
+  alignment seq;
+  for (auto n : g.get_initial_nodes())
+    seq.push_back(align_elem(n,"^","[ANCHOR]")); // initial place, to anchor the sequence
+  
+  for (size_t nv=0; nv<trace.second.size(); ++nv) {
+    int best = prob.best_label(nv).front();
+    string var1 = prob.get_var_name(nv);
+    string lab1 = prob.get_label_name(nv,best);
+    
+    if (lab1 == graph::DUMMY) seq.push_back(align_elem(lab1,var1,"[L]"));
+    else seq.push_back(align_elem(lab1,var1,"[L/M]"));
+  }
+  
+  for (auto n : g.get_final_nodes())
+    seq.push_back(align_elem(n,"^","[ANCHOR]")); // final place, to anchor the sequence
+  
+  return seq;
+}
+
+  
+///////////////////////////////////////////////////////
+/// add missing model moves to an alignment
+
+void add_model_moves(alignment &seq, const graph &g, const behavioral_profile &bptf) {
+  alignment::iterator p = seq.begin();
+  alignment::iterator pprev = p; 
+  ++p;  // start at second element (first is the anchor, initial place)
+  while (p!=seq.end()) {
+    
+    if (p->type != "[L]") {   // skip deletions
+      
+      if (g.path_exists(pprev->id,p->id) and bptf.get_relation(pprev->id,p->id)!=behavioral_profile::INTERLEAVED) {
+        list<string> mreal = g.path(pprev->id,p->id);
+        for (auto m : mreal) {
+          if (g.get_node(m).type == node::TRANSITION)
+            seq.insert(p, align_elem(m, g.get_node(m).name, "[M-REAL]"));
+        }
+      }
+      
+      pprev = p; // 'pprev' remembers is the last non-deletion element seen
+    }
+    
+    ++p;
+  }
+  
 }
 
 
@@ -321,8 +388,8 @@ int main(int argc, char *argv[]) {
   behavioral_profile bp(fbp);
   TRACE(7, "BP loaded is: " << bp.dump());
 
-  TRACE(1, "Loading trace file " << ftrace)
-  list<pair<string,vector<string>>> log = load_traces(ftrace);  // load traces
+  TRACE(1, "Loading trace file " << ftrace);
+  list<pair<string,vector<string>>> log = load_traces(ftrace,g);  // load traces
   TRACE(1, "Loaded " << log.size() << " traces...");
 
   /// Create a RL solver for the constraint satisfaction problems
@@ -330,8 +397,8 @@ int main(int argc, char *argv[]) {
 
   for (auto trace : log) {
     // try to align trace and graph.
-    TRACE (1, "-----------------------------------------------------");
-    TRACE (1, "ALIGNING TRACE " << trace.first );
+    TRACE(1, "-----------------------------------------------------");
+    TRACE(0, "ALIGNING TRACE " << trace.first );
 
     clock_t t0 = clock();  // initial time
 
@@ -339,48 +406,54 @@ int main(int argc, char *argv[]) {
     problem prob = create_labeling_problem(trace.second, g, bp, bptf);
 
     // solve constraint satisfaction problem using RL
+    TRACE(1, "  solving RL problem");
     solver.solve(prob);
 
-    // extract solution and create an aligned sequence
-    alignment seq;
-    for (auto n : g.get_initial_nodes())
-      seq.push_back(align_elem(n,"^","[ANCHOR]")); // initial place, to anchor the sequence
-    for (size_t nv=0; nv<trace.second.size(); ++nv) {
-      int best = prob.best_label(nv).front();
-      string var1 = prob.get_var_name(nv);
-      string lab1 = prob.get_label_name(nv,best);
-
-      if (lab1 == graph::DUMMY) seq.push_back(align_elem(lab1,var1,"[L]"));
-      else seq.push_back(align_elem(lab1,var1,"[L/M]"));
-    }
-    for (auto n : g.get_final_nodes())
-      seq.push_back(align_elem(n,"^","[ANCHOR]")); // final place, to anchor the sequence
-
+    TRACE(1, "  solved. Adding model moves");
+    
+    // extract solution and create a (partially) aligned sequence
+    alignment seq = RL_to_alignment(g, trace, prob);
     TRACE(3, "initial alignment: "<< seq.dump());
     TRACE(3, "initial alignment: "<< seq.dump(true));
-    
-    // complete sequence with missing tasks
-    alignment::iterator p = seq.begin();
-    alignment::iterator pprev = p; 
-    ++p;  // start at second element (first is the anchor, initial place)
-    while (p!=seq.end()) {
 
-      if (p->type != "[L]") {   // skip deletions
-
-        if (g.path_exists(pprev->id,p->id) and bptf.get_relation(pprev->id,p->id)!=behavioral_profile::INTERLEAVED) {
-          list<string> mreal = g.path(pprev->id,p->id);
-          for (auto m : mreal) {
-            if (g.get_node(m).type == node::TRANSITION)
-              seq.insert(p, align_elem(m, g.get_node(m).name, "[M-REAL]"));
-          }
-        }
-      
-        pprev = p; // 'pprev' remembers is the last non-deletion element seen
+    /*  --------------- BEGIN OF NEW COMPLETION PROPOSAL -------------*/
+    set<string> open = g.get_initial_nodes();
+    auto p = seq.begin();
+    ++p; // skip anchor
+    while (p != seq.end()) {
+      if (p->type=="[L]") {
+        ++p;
+        continue;
       }
 
-      ++p;
+      // p->type is [L/M]. Find a path to p current PN state (maybe empty if p can already be fired)
+      list<string> mreal;
+      if (g.find_path(open, p->id, mreal)) {        
+        // there is a path that can fill the gap:  Fill the gap with the shortest path
+        for (auto m : mreal) {
+          if (g.get_node(m).type == node::TRANSITION) {
+            seq.insert(p, align_elem(m, g.get_node(m).name, "[M-REAL]"));
+            open = g.fire_transition(open, m);
+          }
+        }
+        // we are good up to p, move to next event
+        open = g.fire_transition(open, p->id);
+        ++p;
+        continue;
+      }
+
+      // p->type is [L/M], and there is no possible set of model moves that will fix this.
+      // Try removing p, and cross fingers.
+      p->type = "[L]";
     }
+
     
+    /*  --------------- END OF NEW COMPLETION PROPOSAL -------------*/
+
+    /*  --------------- BEGIN OF OLD COMPLETION PROPOSAL -------------    
+    // complete sequence with missing model moves
+    add_model_moves(seq, g, bptf);    
+    TRACE(1, "Completed alignment ");
     TRACE(3, "Completed alignment: "<< seq.dump());
     TRACE(3, "Completed alignment: "<< seq.dump(true));
 
@@ -445,14 +518,17 @@ int main(int argc, char *argv[]) {
 
       p = q; // we made it fitting from p to q, skip ahead.
     }
+      --------------- END OF OLD COMPLETION PROPOSAL -------------*/
           
     seq.pop_front(); // remove initial node anchor.
     seq.pop_back(); // remove final node anchor.
 
+    TRACE(1, "Final alignment ");
     TRACE(3, "Final alignment: "<< seq.dump());
     TRACE(3, "Final alignment: "<< seq.dump(true));
 
     seq.purge();
+    TRACE(1, "Purged alignment ");
     TRACE(3, "Purged alignment: "<< seq.dump());
     TRACE(3, "Purged alignment: "<< seq.dump(true));
 
@@ -461,15 +537,13 @@ int main(int argc, char *argv[]) {
     while (not seq.empty() and seq.front().type=="[L]") // skip initial [L] elements, if any
       seq.pop_front();
 
-    set<string> open;
-    for (auto n : g.get_initial_nodes()) open.insert(n);
-    set<string> final;
-    for (auto n : g.get_final_nodes()) final.insert(n);
+    set<string> initial = g.get_initial_nodes();
+    set<string> final = g.get_final_nodes();
 
     alignment::iterator pos;
     alignment::iterator last = seq.end();
     --last;
-    if (g.is_fitting(open, final, seq.begin(), last, pos)) cout << " FITTING";
+    if (g.is_fitting(initial, final, seq.begin(), last, pos)) cout << " FITTING";
     else cout << " NOT-FITTING";
 
     clock_t t1 = clock();  // final time

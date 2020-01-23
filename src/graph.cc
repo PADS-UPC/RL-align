@@ -28,6 +28,7 @@
 #include <fstream>
 #include <sstream>
 #include <climits>
+#include <cmath>
 #include <iterator>
 #include <algorithm>
 
@@ -42,6 +43,7 @@
 using namespace std;
 
 const std::string graph::DUMMY = "_DUMMY_";
+const int graph::BFS_LIMIT = 400;
 
 //////////// Class node stores a graph node //////////////7
 
@@ -115,29 +117,39 @@ graph::graph(const string &fname, NetVariant which, bool addIFS, bool addLOOPS) 
 	// It is a leaf. Locate other non-leaf nodes with the same name.
 	list<string> ref = get_nodes_by_name(nd.name);
 
-	string rid;
-	bool found = false;
+	list<string> rid;
 	for (auto t : ref) {                
 	  // we look for a non-leaf node with the same name (which is not the node itself)
-	  if (t!=nd.id and not is_leaf(t)) {
-	    if (found) {
-	      // we already had one, this is the second. Shouldn't happen. Abort.
-	      ERROR_CRASH("ERROR: More than one non-leaf node found with name " << nd.name);
-	    }
-	    
-	    TRACE(3,"   found non-leaf node with same name " << t); 
-	    found = true;
-	    rid = t;
-	  }
+	  if (t!=nd.id and not is_leaf(t))
+	    rid.push_back(t);
 	}
 
-	if (found) {
-	  // If there is a path from rid to nd.id, adding the new edge would create a loop
-	  bool loop = accessible(rid,nd.id);
-	  // remember that edges arriving to nd will be redirected to rid
-	  if ((loop and addLOOPS) or (not loop and addIFS)) {
-	    to_be_replaced.push_back(make_pair(nd.id,rid));
-	  }
+	if (rid.size() > 0) {
+          TRACE(3,"   found " << rid.size() << " non-leaf nodes with same name than " << nd.id << " (" << nd.name << ")" ); 
+          TRACE(3,"   [" << list2string(rid) << "]");
+
+          string refid;
+	  bool isloop = false;
+          string log="IF";
+          for (auto r : rid) {
+            // for IF cutoffs, select any in the list (they should all have the same future)
+            refid = r;
+            if (accessible(r,nd.id)) {
+              // if there is a path from rid to nd.id, adding the new edge would create a loop
+              isloop = true;
+              log = "LOOP";
+              break;
+            }
+          }
+
+          if ((isloop and addLOOPS) or (not isloop and addIFS)) {
+            TRACE(3, "redirecting " << log << ": " << nd.id << " to " << refid);
+            // remember that edges arriving to nd will be redirected to rid
+            to_be_replaced.push_back(make_pair(nd.id,refid));
+          }
+          else {
+            TRACE(3, "ignoring " << log << ": " << nd.id << " to " << refid);
+          }
 	}
       }
 
@@ -597,10 +609,167 @@ bool graph::accessible(const string &src, const string &targ) const {
   }
 }
 
+/// get possible transitions from a PN configuration
+
+set<string> graph::possible_transitions(const set<string> &open, string target) const {
+  set<string> tr;
+  // check for possible model or sync moves
+  for (auto s : open) { // for each open place
+    // if target was specified, but place "s" can not reach it, skip its transitions
+    if (target!="" and distance(s,target)<0) continue; 
+
+    set<string> succ = get_out_edges(s);
+    for (auto t : succ) { // for each possible transition from s
+      node tnode = get_node(t);
+      // see if all markings to fire that transition are satisfied
+      set<string> diff = difference_set(get_in_edges(t), open);
+      if (diff.empty()) {
+	// all required markings were in 'open', the transition can be fired
+	tr.insert(t); 
+      }
+    }
+  }
+  return tr;
+}
+
+/// see if a PN configuration is final
+
+bool graph::is_final(const set<string> &open) const {
+  return includes(final_nodes.begin(), final_nodes.end(), open.begin(), open.end());
+}
+
+
+// fire a transition on given PN configuration and return new set of marked places
+set<string> graph::fire_transition(const set<string> &open, const string &t) const {
+  return union_set(difference_set(open, get_in_edges(t)),
+                   get_out_edges(t));
+}
+
+
+// get minimum distance from any node in 'open' to 'target', or -1 if there is no path
+int graph::shortest_distance(const set<string> &open, const string &target) const {
+  int m = std::numeric_limits<int>::max();
+  for (auto x : open) {
+    int d = 0;
+    if (x != target) d = distance(x,target);    
+    if (d>=0 and d<m) m = d;
+  }
+  if (m == std::numeric_limits<int>::max()) return -1;
+  else return m;
+}
+
+// get average distance from any node in 'open' to 'target', or -1 if there is no path
+int graph::average_distance(const set<string> &open, const string &target) const {
+  int m = 0;
+  int s = 0;
+  for (auto x : open) {
+    int d = 0;
+    if (x != target) d = distance(x,target);    
+    if (d>=0) {
+      s += d;
+      ++m;
+    }
+  }
+  return int(round(double(s)/m));
+}
+
+search_state::search_state(const set<string> &op, const list<string> &pth, int dist) { open_places = op; path = pth; distance=dist; }
+search_state::~search_state() {}
+
+bool search_state::operator<(const search_state &p) const {
+  if (p.distance < 0) return true;
+  else if (this->distance < 0 and p.distance >= 0) return false;
+  else if (this->distance < p.distance) return true;
+  else if (this->distance > p.distance) return false;
+  else { // same distance, break tie
+    return set2string(this->open_places) < set2string(p.open_places);
+  }
+}
+
+
+// Perform BFS on petri net to find a path from current configuration ("open") to given transition (target)
+bool graph::find_path(const set<string> &open, const string &target, list<string> &path) const {
+
+  path.clear();
+  set<search_state> pending;   // list of pending configurations to explore
+
+  set<set<string>> seen;
+  pending.insert(search_state(open,list<string>(),shortest_distance(open,target)));
+  int explored = 0;
+  while (not pending.empty()) {
+
+    search_state current = *pending.begin(); // get current state to explore
+    pending.erase(pending.begin()); // remove from candidate list
+    
+    TRACE(3,"BFSearch path from configuration [" << set2string(current.open_places) << "] to node " << target);
+    seen.insert(current.open_places);
+
+    set<string> ptr = possible_transitions(current.open_places, target);
+    TRACE(3,"   possible transitions: [" << set2string(ptr) << "]");
+
+    if (current.open_places.find(target)!=current.open_places.end() or  // the target is a place and we reached it
+        ptr.find(target) != ptr.end()) {                                // or the target is an enabled transition
+
+      path = current.path;
+      TRACE(3,"   Path found: [" << list2string(path) << "]");
+      return true;
+    }
+
+    
+    ++explored;
+    if (explored>BFS_LIMIT and pending.size()>BFS_LIMIT) {
+      // the alignment is probably wrong and there is no way to fix it,
+      // or maybe the model is too big or complex to be worth solving it via A*
+      TRACE(3,"   BFS Exploration is taking too long, giving up");
+      return false;
+    }
+    
+    if (current.distance < 0) {
+      // if there is no conection from this configuration to target, do not expand it
+      TRACE(3,"   No connection to target from here. Abandoning branch");
+    }
+    else {
+      TRACE(3,"   Adding successor configurations to pending list");
+      for (auto t : ptr) {
+        // fire each transition and add resulting configuration for further exploration
+        set<string> nextopen = fire_transition(current.open_places, t);
+        TRACE(4,"      - possible sucessor firing " << t << ": " << set2string(nextopen));
+
+        if (seen.find(nextopen) == seen.end()) {
+          // if unseen configuration, expand.
+          // extend partial path with fired transition and store pair (configuration, path) for BFS
+          list<string> nextpath = current.path;
+          nextpath.push_back(t);
+          // heurisic for A*: current path length+underestimation of remaining length.
+	  int h = shortest_distance(nextopen,target);   // heuristic cost estimation
+	  int g = nextpath.size();  // cost accumulated so far
+	  int f; // A* cost function f = g + h
+	  if (h<0) 
+	    f = -1;   // no path from here, add negative cost so it is discarded when (or if) selected
+	  else 
+	    f = g + h;
+	  
+	  pending.insert(search_state(nextopen, nextpath, f));
+	  TRACE(4,"        Adding "<< f << "("<<g<<"+"<<h<<")/" << list2string(nextpath) << "/" << set2string(nextopen));
+	  TRACE(4,"        Pending size =" << pending.size());	  
+        }
+        else {
+          // if configuration is already visited, skip
+          TRACE(3,"   Skipping seen configuration [" << set2string(nextopen) << "]");
+        }
+      }
+    }
+    
+    TRACE(3,"   Pending contains now "<< pending.size() << " configurations");
+  }
+  
+  return false;
+}
+
 
 /// find out whether there is a path src -> targ. Requires that paths have been loaded
 
-bool graph::path_exists(const std::string &src, const std::string &targ) const {
+bool graph::path_exists(const string &src, const string &targ) const {
   return paths.find(src+" "+targ) != paths.end();
 }
 
@@ -677,20 +846,23 @@ bool graph::is_fitting(set<string> &open, const set<string> &final,
 
   curr = from;
   while (curr!=next(to)) {
-    set<string> pred = get_in_edges(curr->id);
-    // check if all required states are open
-    if (includes(open.begin(), open.end(), pred.begin(), pred.end())) {
-      open = difference_set(open, pred); // remove predecessors from open list
-      set<string> succ = get_out_edges(curr->id);
-      open = union_set(open,succ);       // add successors to open list
-    }
-    else if (not skip_unexpected) {
-      stringstream q; for (auto x=curr; x!=next(to); ++x) q<<" "<<x->id;  
-      TRACE(3,"Unexpected "<< curr->id <<" with open=["<< set2string(open) <<"]  seq=["<< q.str() <<"]");
-      return false;
-    }
-    else {
-      TRACE(3,"skipping unexpected "<< curr->id);
+    // ignore log moves
+    if (curr->type != "[L]") {
+      set<string> pred = get_in_edges(curr->id);
+      // check if all required states are open
+      if (includes(open.begin(), open.end(), pred.begin(), pred.end())) {
+        open = difference_set(open, pred); // remove predecessors from open list
+        set<string> succ = get_out_edges(curr->id);
+        open = union_set(open,succ);       // add successors to open list
+      }
+      else if (not skip_unexpected) {
+        stringstream q; for (auto x=curr; x!=next(to); ++x) q<<" "<<x->id;  
+        TRACE(3,"Unexpected "<< curr->id <<" with open=["<< set2string(open) <<"]  seq=["<< q.str() <<"]");
+        return false;
+      }
+      else {
+        TRACE(3,"skipping unexpected "<< curr->id);
+      }
     }
 
     // so far so good, go for next event
@@ -709,10 +881,10 @@ bool graph::is_fitting(set<string> &open, const set<string> &final,
 
 /// Compute possible alignment moves from given marking and log event
 
-list<align_elem> graph::possible_moves(const set<string> &open, const string &event) const {
+set<align_elem> graph::possible_moves(const set<string> &open, const string &event) const {
   TRACE(5,"computing possible moves from ["<< set2string(open) <<"] with event " << event);
 
-  list<align_elem> result;
+  set<align_elem> result;
 
   // check for possible model or sync moves
   for (auto s : open) { // for each open place
@@ -723,17 +895,17 @@ list<align_elem> graph::possible_moves(const set<string> &open, const string &ev
       set<string> diff = difference_set(get_in_edges(t), open);
       if (diff.empty()) {
 	// all required markings were in 'open', the transition can be fired
-	result.push_back(align_elem(tnode.id, tnode.name, "[M-REAL]"));  // always add as model move
+	result.insert(align_elem(tnode.id, tnode.name, "[M-REAL]"));  // always add as model move
 	if (tnode.name == event) 
-	  result.push_back(align_elem(tnode.id, tnode.name, "[L/M]"));  // if name matches, add also as sync move
+	  result.insert(align_elem(tnode.id, tnode.name, "[L/M]"));  // if name matches, add also as sync move
       }
     }
   }
 
   // log move is always possible
-  result.push_back(align_elem(DUMMY, event, "[L]"));
+  result.insert(align_elem(DUMMY, event, "[L]"));
 
-  stringstream r; for (auto x : result) r << " " << x.dump();  
+  stringstream r; for (auto x : result) r << " " << x.dump(true);  
   TRACE(4,"possible moves computed: [" << r.str() << "]");
 
   return result;
@@ -752,8 +924,7 @@ std::set<std::string> graph::simulate_move(const std::set<std::string> &open, co
     // Sync or model move.
     // New marking is current marking in 'open', removing nodes required to fire the transition, 
     // and adding nodes marked after the firing
-    result = union_set(difference_set(open, get_in_edges(m.id)),
-		       get_out_edges(m.id));
+    result = fire_transition(open, m.id);
   }
   
   TRACE(5,"Marking after move is ["<< set2string(result) <<"]");
@@ -770,19 +941,19 @@ string graph::dump() const {
   for (auto k : nodes) {
     const node &n = get_node(k);
     if (n.type==node::PLACE)
-      out << "PLACE" << " " << n.id << " " << n.name << " "
-	  << (is_initial(n.id) ? "INITIAL" : "-") << " "  
+      out << "PLACE" << "\t" << n.id << "\t" << n.name << "\t"
+	  << (is_initial(n.id) ? "INITIAL" : "-") << "\t"  
 	  << (is_final(n.id) ? "FINAL" : "-") << endl;
   }
   for (auto k : nodes) {
     const node & n = get_node(k);
     if (n.type==node::TRANSITION)
-      out << "TRANSITION" << " " << n.id << " " << n.name << endl;
+      out << "TRANSITION" << "\t" << n.id << "\t" << n.name << endl;
   }
   for (auto k : nodes) {
     set<string> edges = get_out_edges(k);
     for (auto d : edges) 
-      out << "ARC " << k << " " << d << endl;
+      out << "ARC" << "\t" << k << "\t" << d << endl;
   }
   return out.str();
 }

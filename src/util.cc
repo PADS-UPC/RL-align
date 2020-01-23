@@ -56,3 +56,10 @@ string vector2string(const vector<string> &ss) {
   if (s.str().length()>0) return s.str().substr(1);
   else return "";
 }
+
+string list2string(const list<string> &ss) {  
+  stringstream s;
+  for (auto x : ss) s<<" "<<x;
+  if (s.str().length()>0) return s.str().substr(1);
+  else return "";
+}
