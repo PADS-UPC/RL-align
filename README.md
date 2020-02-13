@@ -4,7 +4,7 @@
 RL-align performs conformance checking aligning log traces with a PM Petri net.
 It uses relaxation labeling (RL) constraint satisfaction algorithm to perform the alignment. 
 
-Obtained alignments may be suboptimal or unfitting. However, the computation time is linear with the traec length, offering computation times about two orders of magnitude faster than other state-of-the-art methods.
+Obtained alignments may be suboptimal, but the computation time is linear with the trace length, offering computation times about two orders of magnitude faster than other state-of-the-art methods.
 
 This software is further described in the following papers:
 
