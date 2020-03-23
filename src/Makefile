@@ -1,7 +1,7 @@
 
 FLAGS=-DVERBOSE -Wall -O3 -std=c++11
 
-all:  align dump paths ComputeBP.class UnfoldPN.class 
+all:  align dump paths ComputeBP.class 
 
 libbpm.a : graph.o bp.o alignment.o config.o traces.o relax.o util.o pugixml.o 
 	ar -rs libbpm.a graph.o bp.o alignment.o config.o traces.o relax.o util.o pugixml.o
