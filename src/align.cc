@@ -212,13 +212,9 @@ void add_constraints(problem & prob,
             //else deR = g.get_num_nodes()*2;
             
             TRACE(5, "checking Dummy compatibility constraint "<<tL<<"-["<<te<<"]-"<<tR<<" "<<dLR<<" "<<dLe<<" "<<deR );
-            if (dLR>=0 and dLe>=0 and deR>=0 and dLR < dLe+deR) {
+            if (dLR>=0 and dLe>=0 and deR>=0 and dLR < dLe+deR-1) {
               TRACE(4, "Dummy compatibility constraint");
-              prob.add_constraint(ev, lb, {{make_pair(evL,lbL)},{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
-              // COMPTE AQUI!! Aixo separat no te massa sentit, perque un dels dos costats pot estar be!
-              //                (no se perque ho vaig deixar aixi....)
-              //prob.add_constraint(ev, lb, {{make_pair(evL,lbL)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
-              //prob.add_constraint(ev, lb, {{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-dLR) );
+              prob.add_constraint(ev, lb, {{make_pair(evL,lbL)},{make_pair(evR,lbR)}}, cfg->DUMMY_COMPAT*(dLe+deR-1-dLR) );
             }
           }
         }
