@@ -46,7 +46,7 @@ public class ComputeBP {
 	Scanner input = new Scanner(System.in);
         while (input.hasNext()) {
             String line = input.nextLine();
-	    String[] fields = line.split(" ");
+	    String[] fields = line.split("\t");
 	    if (fields[0].equals("PLACE")) {
 		Place p = new Place();
                 p.setId(fields[1]);

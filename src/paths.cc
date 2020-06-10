@@ -55,7 +55,7 @@ void merge(list<string> &path, const list<string> &elems) {
 
   path.insert(p1, e1, elems.end());
   string sr; for (auto i : path) sr += " "+i;
-  TRACE(2," [merge]  path=["<<sp<<"]   elem=["<<se<<"]   mergin=["<<sr<<"]");
+  TRACE(3," [merge]  path=["<<sp<<"]   elem=["<<se<<"]   mergin=["<<sr<<"]");
 }
 
 
@@ -79,7 +79,7 @@ path parallel_join(const graph &g, string src, string targ, list<string> &seen, 
   int nok = 0;
   set<string> in = g.get_in_edges(targ);
   for (auto ant : in) {
-    TRACE(2,"[required]    parallel at "<<targ<< " checking pred="<<ant);
+    TRACE(3,"[required]    parallel at "<<targ<< " checking pred="<<ant);
     if (push) seen.push_back(targ);
     path r = required(g, src, ant, seen, depth);
     if (push) seen.pop_back();
@@ -93,18 +93,18 @@ path parallel_join(const graph &g, string src, string targ, list<string> &seen, 
   
   // if all subpaths work (or only one but inside depth), return true
   if (nok == int(in.size())) {
-    TRACE(2,"[required]    parallel at "<<targ<< " all branches check");
+    TRACE(3,"[required]    parallel at "<<targ<< " all branches check");
     ret.found = true;
     ret.elems.push_back(targ);
     ret.nested = 0;
   }
   else if (nok>0 and ret.nested>=depth) {
-    TRACE(2,"[required]    parallel at "<<targ<< " one branches checks with depth limits");
+    TRACE(3,"[required]    parallel at "<<targ<< " one branches checks with depth limits");
     ret.found = true;
     ret.elems.push_back(targ);
   }
   else {
-    TRACE(2,"[required]    parallel at "<<targ<< " no branches check");
+    TRACE(3,"[required]    parallel at "<<targ<< " no branches check");
     ret.found = false;
   }
   return ret;
@@ -119,7 +119,7 @@ path exclusive_join(const graph &g, string src, string targ, list<string> &seen,
   int minlen = g.get_num_nodes()*2;// initialize min to a big number;
   set<string> in = g.get_in_edges(targ);
   for (auto ant : in) {
-    TRACE(2,"[required]    exclusive at "<<targ<< " checking pred="<<ant);
+    TRACE(3,"[required]    exclusive at "<<targ<< " checking pred="<<ant);
     if (push) seen.push_back(targ);
     path r = required(g, src, ant, seen, depth);
     if (push) seen.pop_back();
@@ -134,7 +134,7 @@ path exclusive_join(const graph &g, string src, string targ, list<string> &seen,
   }
   
   if (ret.found) {
-    TRACE(2,"[required]    exclusive at "<<targ<< " shortest branch found");
+    TRACE(3,"[required]    exclusive at "<<targ<< " shortest branch found");
     ret.elems.push_back(targ);
   }
   return ret;        
@@ -263,6 +263,7 @@ int main(int argc, char *argv[]) {
   map<string,string> parallels;
       
   for (auto n : nodes) {
+    TRACE(1,"Init node "<<n);
     // init path matrix with direct edges
     set<string> succ = g.get_out_edges(n);
     for (auto s : succ) {
@@ -275,16 +276,32 @@ int main(int argc, char *argv[]) {
     path p;
     paths[n+":::"+n] = p;
 
-    // for parallel splits, brute-force compute path to matching parallel split
+    // for parallel splits, compute path to matching parallel join
     if (g.is_parallel_split(n)) { 
+      TRACE(2," is parallel split "<<n);
       string s = g.find_matching_join(n);
-      list<string> seen;
-      path p = required(g, n, s, seen, 0);
+      TRACE(2," found join at "<<s);
+
+      // deprecated, used brute force, too slow in some cases.
+      //list<string> seen;
+      //path p = required(g, n, s, seen, 0);
+
+      // now use A* to find shortest path to matching join
+      path p;
+      list<string> ls;
+      p.found = g.find_path(g.get_out_edges(n), s, p.elems);
+      if (not p.found) {
+        WARNING("Path not found from "<<n<<" to "<<s);
+      }
+      else
+        TRACE(2,"PATH "<<n<<":"<<s<<"="<<list2string(p.elems));
+
       paths[n+":::"+s] = p;
       parallels[n] = s;
     }
   }
 
+  TRACE(1,"Begin Floyd");
   // adapted floyd algorithm
   for (auto k : nodes) {
     for (auto i : nodes) {
@@ -310,6 +327,7 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+  TRACE(1,"End Floyd");
 
   // we want paths from one note to itself to capture loops, if there are any
   for (auto i : nodes) {

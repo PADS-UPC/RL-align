@@ -250,13 +250,13 @@ problem create_labeling_problem(const vector<string> &trace,
 ///////////////////////////////////////////////////////
 /// load traces from a .xes file
 
-list<pair<string,vector<string>>> load_traces(const string &fname, const graph &g) {
+map<vector<string>,vector<string>> load_traces(const string &fname, const graph &g) {
     // open input file
     pugi::xml_document xmldoc;
     xmldoc.load_file(fname.c_str(), pugi::parse_default|pugi::parse_ws_pcdata);
     TRACE(1, "loaded trace file");
 
-    list<pair<string,vector<string>>> result;
+    map<vector<string>,vector<string>> result;
 
     // get each "trace" node under "log"
     pugi::xml_node trace = xmldoc.child("log").child("trace");
@@ -264,6 +264,7 @@ list<pair<string,vector<string>>> load_traces(const string &fname, const graph &
     map<string,int> warned;
     while (trace) {
       string trace_id = trace.find_child_by_attribute("string","key","concept:name").attribute("value").value();
+      std::replace(trace_id.begin(),trace_id.end(),' ','_');
       TRACE(7, "found new trace id="<<trace_id);
       // get each event of the trace
       vector<string> evs;
@@ -271,6 +272,7 @@ list<pair<string,vector<string>>> load_traces(const string &fname, const graph &
       while (event) {
         pugi::xml_node name = event.find_child_by_attribute("string","key","concept:name");
         string evname = name.attribute("value").value();
+        std::replace(evname.begin(),evname.end(),' ','_');
         evs.push_back(evname);
         TRACE(7, "   read event "<<evname);
         if (g.get_nodes_by_name(evname).empty()) {
@@ -279,7 +281,14 @@ list<pair<string,vector<string>>> load_traces(const string &fname, const graph &
         }
         event = event.next_sibling("event");
       }
-      result.push_back(make_pair(trace_id,evs));
+
+      auto t = result.find(evs);
+      if (t==result.end()) { // new trace, add to map
+        vector<string> id = {trace_id};
+        result.insert(make_pair(evs,id));
+      }
+      else // already seen trace, add id to list of synonyms
+        t->second.push_back(trace_id);
 
       trace = trace.next_sibling("trace");
     }
@@ -295,13 +304,13 @@ list<pair<string,vector<string>>> load_traces(const string &fname, const graph &
 ///////////////////////////////////////////////////////
 /// create an alignment from a solved RL problem
 
-alignment RL_to_alignment(const graph& g, const pair<string,vector<string>> &trace, const problem& prob) {
+alignment RL_to_alignment(const graph& g, const vector<string> &trace, const problem& prob) {
   
   alignment seq;
   for (auto n : g.get_initial_nodes())
     seq.push_back(align_elem(n,"^","[ANCHOR]")); // initial place, to anchor the sequence
   
-  for (size_t nv=0; nv<trace.second.size(); ++nv) {
+  for (size_t nv=0; nv<trace.size(); ++nv) {
     int best = prob.best_label(nv).front();
     string var1 = prob.get_var_name(nv);
     string lab1 = prob.get_label_name(nv,best);
@@ -344,7 +353,6 @@ void add_model_moves(alignment &seq, const graph &g, const behavioral_profile &b
   
 }
 
-
 /// ===========================
 /// ========= MAIN ============
 /// ===========================
@@ -385,7 +393,7 @@ int main(int argc, char *argv[]) {
   TRACE(7, "BP loaded is: " << bp.dump());
 
   TRACE(1, "Loading trace file " << ftrace);
-  list<pair<string,vector<string>>> log = load_traces(ftrace,g);  // load traces
+  map<vector<string>,vector<string>> log = load_traces(ftrace,g);  // load traces
   TRACE(1, "Loaded " << log.size() << " traces...");
 
   /// Create a RL solver for the constraint satisfaction problems
@@ -394,12 +402,13 @@ int main(int argc, char *argv[]) {
   for (auto trace : log) {
     // try to align trace and graph.
     TRACE(1, "-----------------------------------------------------");
-    TRACE(0, "ALIGNING TRACE " << trace.first );
+    TRACE(0, "ALIGNING TRACE " << trace.second[0] << " (and synonyms)");
 
     clock_t t0 = clock();  // initial time
 
     // create constraint satisfaction problem 
-    problem prob = create_labeling_problem(trace.second, g, bp, bptf);
+    TRACE(1, "  Creating RL problem size="<<trace.first.size());
+    problem prob = create_labeling_problem(trace.first, g, bp, bptf);
 
     // solve constraint satisfaction problem using RL
     TRACE(1, "  solving RL problem");
@@ -408,7 +417,7 @@ int main(int argc, char *argv[]) {
     TRACE(1, "  solved. Adding model moves");
     
     // extract solution and create a (partially) aligned sequence
-    alignment seq = RL_to_alignment(g, trace, prob);
+    alignment seq = RL_to_alignment(g, trace.first, prob);
     TRACE(3, "initial alignment: "<< seq.dump());
     TRACE(3, "initial alignment: "<< seq.dump(true));
 
@@ -528,7 +537,7 @@ int main(int argc, char *argv[]) {
     TRACE(3, "Purged alignment: "<< seq.dump());
     TRACE(3, "Purged alignment: "<< seq.dump(true));
 
-    cout << trace.first << " " << seq.dump();
+    string solution = seq.dump();
         
     while (not seq.empty() and seq.front().type=="[L]") // skip initial [L] elements, if any
       seq.pop_front();
@@ -539,13 +548,18 @@ int main(int argc, char *argv[]) {
     alignment::iterator pos;
     alignment::iterator last = seq.end();
     --last;
-    if (g.is_fitting(initial, final, seq.begin(), last, pos)) cout << " FITTING";
-    else cout << " NOT-FITTING";
+    string fitting;
+    if (g.is_fitting(initial, final, seq.begin(), last, pos)) fitting = "FITTING";
+    else fitting = "NOT-FITTING";
 
     clock_t t1 = clock();  // final time
-    cout << " " << double(t1-t0)/double(CLOCKS_PER_SEC);
-
-    cout << endl;
+    double time  = double(t1-t0)/double(CLOCKS_PER_SEC);
+    
+    // output all synonyms with same result.  Attribute CPU time only to the first one
+    for (auto s : trace.second) {
+      cout << s << "  " << solution << " " << fitting << " " << time << endl;
+      time = 0;
+    }
   }
 }
 

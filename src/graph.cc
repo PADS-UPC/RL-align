@@ -169,6 +169,15 @@ graph::graph(const string &fname, NetVariant which, bool addIFS, bool addLOOPS) 
 	  final_nodes.insert(n.first);
 	}
       }
+
+      if (initial_nodes.empty()) {
+        WARNING("WARNING: No pure initial nodes detected. Defaulting to c0");
+        if (nodes_by_id.find("c0")==nodes_by_id.end()) {
+          ERROR_CRASH("No c0 node found");
+        }
+        else
+          initial_nodes.insert("c0");         
+      }
       
       // if more than one final node, unify them with the first in the list.
       TRACE(6,"Final nodes: [" << set2string(final_nodes) << "]");
@@ -202,6 +211,7 @@ void graph::load_nodes(pugi::xml_node page, const std::string &type, NetVariant 
     string name = (which==UNFOLDING
 		   ? n.child("originalNode").child_value("text")
 		   : n.child("name").child_value("text"));
+    std::replace(name.begin(),name.end(),' ','_');
       
     node x(t,
            n.attribute("id").value(),
@@ -506,11 +516,11 @@ string graph::find_matching_split(const string &id) const {
 }
 
 
-string graph::find_matching_join(const string &id, int depth, set<string> &seen) const {
+string graph::find_matching_join(const string &split, const string &id, int depth, set<string> &seen) const {
 
-  TRACE(3,"looking for match at " << id);
+  TRACE(3,"looking for match for "<<split<<" at " << id);
   
-  if (is_parallel_join(id)) { // parallel join, decrease depth
+  if (is_parallel_join(id) and id!=split) { // parallel join, decrease depth
     --depth;
     if (depth==0) return id; // we reached initial depth, it is the searched node
   }
@@ -529,7 +539,7 @@ string graph::find_matching_join(const string &id, int depth, set<string> &seen)
   // if not found, take one more step forward
   seen.insert(id);
   for (auto e : get_out_edges(id)) {
-    string found = find_matching_join(e, depth, seen);
+    string found = find_matching_join(split, e, depth, seen);
     if (found!="") return found;
   }
   seen.erase(id);
@@ -547,7 +557,8 @@ string graph::find_matching_join(const string &id) const {
   }
 
   set<string> seen;
-  return find_matching_join(id,0,seen);
+  return find_matching_join(id, id, 0, seen);
+  
 }
   /*
 string graph::find_matching_join(const string &id) const {
@@ -695,6 +706,7 @@ bool graph::find_path(const set<string> &open, const string &target, list<string
 
   set<set<string>> seen;
   pending.insert(search_state(open,list<string>(),shortest_distance(open,target)));
+  //pending.insert(search_state(open,list<string>(),average_distance(open,target)));
   int explored = 0;
   while (not pending.empty()) {
 
@@ -740,9 +752,13 @@ bool graph::find_path(const set<string> &open, const string &target, list<string
           // extend partial path with fired transition and store pair (configuration, path) for BFS
           list<string> nextpath = current.path;
           nextpath.push_back(t);
-          // heurisic for A*: current path length+underestimation of remaining length.
+          // heurisic for BFS: current path length+underestimation of remaining length.
+          // (this BFS is actually an A*)
+          // If this is too slow, try removing the first part of the sum and do a simple BFS.
+          // Results will have higer cost, but search may be faster
 	  int h = shortest_distance(nextopen,target);   // heuristic cost estimation
-	  int g = nextpath.size();  // cost accumulated so far
+	  //int h = average_distance(nextopen,target);   // heuristic cost estimation
+	  int g = nextpath.size();
 	  int f; // A* cost function f = g + h
 	  if (h<0) 
 	    f = -1;   // no path from here, add negative cost so it is discarded when (or if) selected

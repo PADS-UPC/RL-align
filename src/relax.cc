@@ -128,7 +128,7 @@ using namespace std;
       int j;
       for (j=0,y=x->begin();  y!=x->end();  j++,y++) {
         TRACE(4, "added constraint with comp=" << comp << " for ("<<v<<","<<l<<")["<<varnames[v]<<"="<<vars[v][l].get_name()
-              << "] ==> (" << y->first << "," << y->second << ")["<<varnames[y->first]<<"="<<vars[y->first][y->second].get_name()<<"]");
+              << "] <== (" << y->first << "," << y->second << ")["<<varnames[y->first]<<"="<<vars[y->first][y->second].get_name()<<"]");
         
         ct[i][j] = constraint_element(y->first, y->second, vars[y->first][y->second].weight);
       }

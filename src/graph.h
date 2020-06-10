@@ -76,7 +76,7 @@ class graph {
      /// utility: find out if there is a loop involving given node, or any accessible from it.
      bool has_loops(const std::string &node, std::set<std::string> &seen) const;
 
-     std::string find_matching_join(const std::string &id, int depth, std::set<std::string> &seen) const;
+     std::string find_matching_join(const std::string &split, const std::string &id, int depth, std::set<std::string> &seen) const;
      
    public:
      // dummy label
