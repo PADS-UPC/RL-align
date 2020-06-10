@@ -14,7 +14,7 @@ Version 1.0 (tag ``v1.0`` in gitHub)
    in: Business Process Management - 17th International Conference, BPM 2019, pp. 250–267.
    Vienna, Austria, September 1-6, 2019
 
-Version 2.0 (tag ``v2.0`` in gitHub)
+Version 2.1 (tag ``v2.1`` in gitHub)
    Submitted
 
 ## License
