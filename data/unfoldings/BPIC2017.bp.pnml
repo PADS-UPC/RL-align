@@ -1,0 +1,1488 @@
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+	<net type="branching_process:low_level_net">
+		<original_net>
+			<net type="low_level_net">
+				<page>
+					<name>
+						<text>origninal low_level_net</text>
+					</name>
+					<place id="p0">
+						<name>
+							<text>sink 720</text>
+						</name>
+					</place>
+					<place id="p1">
+						<name>
+							<text>sink 721</text>
+						</name>
+					</place>
+					<place id="p2">
+						<name>
+							<text>sink 722</text>
+						</name>
+					</place>
+					<place id="p3">
+						<name>
+							<text>sink 723</text>
+						</name>
+					</place>
+					<place id="p4">
+						<name>
+							<text>sink 725</text>
+						</name>
+					</place>
+					<place id="p5">
+						<name>
+							<text>sink 727</text>
+						</name>
+					</place>
+					<place id="p6">
+						<name>
+							<text>sink 729</text>
+						</name>
+					</place>
+					<place id="p7">
+						<name>
+							<text>sink 731</text>
+						</name>
+					</place>
+					<place id="p8">
+						<name>
+							<text>sink 733</text>
+						</name>
+					</place>
+					<place id="p9">
+						<name>
+							<text>sink 734</text>
+						</name>
+					</place>
+					<place id="p10">
+						<name>
+							<text>sink 735</text>
+						</name>
+					</place>
+					<place id="p11">
+						<name>
+							<text>sink 736</text>
+						</name>
+					</place>
+					<place id="p12">
+						<name>
+							<text>sink 737</text>
+						</name>
+					</place>
+					<place id="p13">
+						<name>
+							<text>sink 738</text>
+						</name>
+					</place>
+					<place id="p14">
+						<name>
+							<text>sink 739</text>
+						</name>
+					</place>
+					<place id="p15">
+						<name>
+							<text>sink 740</text>
+						</name>
+					</place>
+					<place id="p16">
+						<name>
+							<text>sink 742</text>
+						</name>
+					</place>
+					<place id="p17">
+						<name>
+							<text>sink 744</text>
+						</name>
+					</place>
+					<place id="p18">
+						<name>
+							<text>middle 730</text>
+						</name>
+					</place>
+					<place id="p19">
+						<name>
+							<text>middle 732</text>
+						</name>
+					</place>
+					<place id="p20">
+						<name>
+							<text>middle 745</text>
+						</name>
+					</place>
+					<place id="p21">
+						<name>
+							<text>source 719</text>
+						</name>
+						<initialMarking>
+							<text>1</text>
+						</initialMarking>
+					</place>
+					<place id="p22">
+						<name>
+							<text>source 724</text>
+						</name>
+					</place>
+					<place id="p23">
+						<name>
+							<text>source 726</text>
+						</name>
+					</place>
+					<place id="p24">
+						<name>
+							<text>source 728</text>
+						</name>
+					</place>
+					<place id="p25">
+						<name>
+							<text>source 741</text>
+						</name>
+					</place>
+					<place id="p26">
+						<name>
+							<text>source 743</text>
+						</name>
+					</place>
+					<place id="p27">
+						<name>
+							<text>replacement source 746</text>
+						</name>
+					</place>
+					<transition id="t0">
+						<name>
+							<text>A_Denied</text>
+						</name>
+					</transition>
+					<transition id="t1">
+						<name>
+							<text>tau join</text>
+						</name>
+					</transition>
+					<transition id="t2">
+						<name>
+							<text>tau join</text>
+						</name>
+					</transition>
+					<transition id="t3">
+						<name>
+							<text>A_Concept</text>
+						</name>
+					</transition>
+					<transition id="t4">
+						<name>
+							<text>A_Pending</text>
+						</name>
+					</transition>
+					<transition id="t5">
+						<name>
+							<text>O_Created</text>
+						</name>
+					</transition>
+					<transition id="t6">
+						<name>
+							<text>O_Refused</text>
+						</name>
+					</transition>
+					<transition id="t7">
+						<name>
+							<text>tau split</text>
+						</name>
+					</transition>
+					<transition id="t8">
+						<name>
+							<text>tau split</text>
+						</name>
+					</transition>
+					<transition id="t9">
+						<name>
+							<text>tau start</text>
+						</name>
+					</transition>
+					<transition id="t10">
+						<name>
+							<text>A_Accepted</text>
+						</name>
+					</transition>
+					<transition id="t11">
+						<name>
+							<text>A_Complete</text>
+						</name>
+					</transition>
+					<transition id="t12">
+						<name>
+							<text>O_Accepted</text>
+						</name>
+					</transition>
+					<transition id="t13">
+						<name>
+							<text>O_Returned</text>
+						</name>
+					</transition>
+					<transition id="t14">
+						<name>
+							<text>A_Cancelled</text>
+						</name>
+					</transition>
+					<transition id="t15">
+						<name>
+							<text>A_Submitted</text>
+						</name>
+					</transition>
+					<transition id="t16">
+						<name>
+							<text>O_Cancelled</text>
+						</name>
+					</transition>
+					<transition id="t17">
+						<name>
+							<text>A_Incomplete</text>
+						</name>
+					</transition>
+					<transition id="t18">
+						<name>
+							<text>A_Validating</text>
+						</name>
+					</transition>
+					<transition id="t19">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t20">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t21">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t22">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t23">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t24">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t25">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t26">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t27">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t28">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t29">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t30">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t31">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t32">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t33">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t34">
+						<name>
+							<text>tau from tree</text>
+						</name>
+					</transition>
+					<transition id="t35">
+						<name>
+							<text>O_Create Offer</text>
+						</name>
+					</transition>
+					<transition id="t36">
+						<name>
+							<text>W_Handle leads</text>
+						</name>
+					</transition>
+					<transition id="t37">
+						<name>
+							<text>W_Call after offers</text>
+						</name>
+					</transition>
+					<transition id="t38">
+						<name>
+							<text>A_Create Application</text>
+						</name>
+					</transition>
+					<transition id="t39">
+						<name>
+							<text>O_Sent (online only)</text>
+						</name>
+					</transition>
+					<transition id="t40">
+						<name>
+							<text>W_Complete application</text>
+						</name>
+					</transition>
+					<transition id="t41">
+						<name>
+							<text>W_Shortened completion</text>
+						</name>
+					</transition>
+					<transition id="t42">
+						<name>
+							<text>W_Validate application</text>
+						</name>
+					</transition>
+					<transition id="t43">
+						<name>
+							<text>W_Call incomplete files</text>
+						</name>
+					</transition>
+					<transition id="t44">
+						<name>
+							<text>O_Sent (mail and online)</text>
+						</name>
+					</transition>
+					<transition id="t45">
+						<name>
+							<text>W_Assess potential fraud</text>
+						</name>
+					</transition>
+					<arc source="p8" target="t0"/>
+					<arc source="t0" target="p14"/>
+					<arc source="p4" target="t1"/>
+					<arc source="p5" target="t1"/>
+					<arc source="p6" target="t1"/>
+					<arc source="t1" target="p0"/>
+					<arc source="p16" target="t2"/>
+					<arc source="p17" target="t2"/>
+					<arc source="t2" target="p7"/>
+					<arc source="p22" target="t3"/>
+					<arc source="t3" target="p4"/>
+					<arc source="p11" target="t4"/>
+					<arc source="t4" target="p9"/>
+					<arc source="p15" target="t5"/>
+					<arc source="t5" target="p19"/>
+					<arc source="p14" target="t6"/>
+					<arc source="t6" target="p19"/>
+					<arc source="p3" target="t7"/>
+					<arc source="t7" target="p22"/>
+					<arc source="t7" target="p23"/>
+					<arc source="t7" target="p24"/>
+					<arc source="p19" target="t8"/>
+					<arc source="t8" target="p25"/>
+					<arc source="t8" target="p26"/>
+					<arc source="p2" target="t9"/>
+					<arc source="t9" target="p27"/>
+					<arc source="p23" target="t10"/>
+					<arc source="t10" target="p5"/>
+					<arc source="p13" target="t11"/>
+					<arc source="t11" target="p19"/>
+					<arc source="p10" target="t12"/>
+					<arc source="t12" target="p11"/>
+					<arc source="p8" target="t13"/>
+					<arc source="t13" target="p19"/>
+					<arc source="p26" target="t14"/>
+					<arc source="t14" target="p17"/>
+					<arc source="p1" target="t15"/>
+					<arc source="t15" target="p2"/>
+					<arc source="p25" target="t16"/>
+					<arc source="t16" target="p16"/>
+					<arc source="p7" target="t17"/>
+					<arc source="t17" target="p10"/>
+					<arc source="p12" target="t18"/>
+					<arc source="t18" target="p19"/>
+					<arc source="p13" target="t19"/>
+					<arc source="t19" target="p19"/>
+					<arc source="p19" target="t20"/>
+					<arc source="t20" target="p18"/>
+					<arc source="p26" target="t21"/>
+					<arc source="t21" target="p17"/>
+					<arc source="p18" target="t22"/>
+					<arc source="t22" target="p24"/>
+					<arc source="p18" target="t23"/>
+					<arc source="t23" target="p6"/>
+					<arc source="p19" target="t24"/>
+					<arc source="t24" target="p7"/>
+					<arc source="p20" target="t25"/>
+					<arc source="t25" target="p27"/>
+					<arc source="p20" target="t26"/>
+					<arc source="t26" target="p0"/>
+					<arc source="p2" target="t27"/>
+					<arc source="t27" target="p0"/>
+					<arc source="p1" target="t28"/>
+					<arc source="t28" target="p2"/>
+					<arc source="p12" target="t29"/>
+					<arc source="t29" target="p19"/>
+					<arc source="p2" target="t30"/>
+					<arc source="t30" target="p3"/>
+					<arc source="p8" target="t31"/>
+					<arc source="t31" target="p19"/>
+					<arc source="p7" target="t32"/>
+					<arc source="t32" target="p10"/>
+					<arc source="p7" target="t33"/>
+					<arc source="t33" target="p9"/>
+					<arc source="p7" target="t34"/>
+					<arc source="t34" target="p8"/>
+					<arc source="p8" target="t35"/>
+					<arc source="t35" target="p15"/>
+					<arc source="p2" target="t36"/>
+					<arc source="t36" target="p3"/>
+					<arc source="p8" target="t37"/>
+					<arc source="t37" target="p13"/>
+					<arc source="p21" target="t38"/>
+					<arc source="t38" target="p1"/>
+					<arc source="p7" target="t39"/>
+					<arc source="t39" target="p19"/>
+					<arc source="p24" target="t40"/>
+					<arc source="t40" target="p7"/>
+					<arc source="p8" target="t41"/>
+					<arc source="t41" target="p19"/>
+					<arc source="p8" target="t42"/>
+					<arc source="t42" target="p12"/>
+					<arc source="p9" target="t43"/>
+					<arc source="t43" target="p8"/>
+					<arc source="p7" target="t44"/>
+					<arc source="t44" target="p19"/>
+					<arc source="p27" target="t45"/>
+					<arc source="t45" target="p20"/>
+				</page>
+			</net>
+		</original_net>
+		<page>
+			<name>
+				<text>branching_process:low_level_net</text>
+			</name>
+			<place id="c0">
+				<name>
+					<text>c0</text>
+				</name>
+				<originalNode ref="p21">
+					<text>source 719</text>
+				</originalNode>
+			</place>
+			<place id="c1">
+				<name>
+					<text>c1</text>
+				</name>
+				<originalNode ref="p1">
+					<text>sink 721</text>
+				</originalNode>
+			</place>
+			<place id="c2">
+				<name>
+					<text>c2</text>
+				</name>
+				<originalNode ref="p2">
+					<text>sink 722</text>
+				</originalNode>
+			</place>
+			<place id="c3">
+				<name>
+					<text>c3</text>
+				</name>
+				<originalNode ref="p27">
+					<text>replacement source 746</text>
+				</originalNode>
+			</place>
+			<place id="c4">
+				<name>
+					<text>c4</text>
+				</name>
+				<originalNode ref="p0">
+					<text>sink 720</text>
+				</originalNode>
+			</place>
+			<place id="c5">
+				<name>
+					<text>c5</text>
+				</name>
+				<originalNode ref="p3">
+					<text>sink 723</text>
+				</originalNode>
+			</place>
+			<place id="c6">
+				<name>
+					<text>c6</text>
+				</name>
+				<originalNode ref="p20">
+					<text>middle 745</text>
+				</originalNode>
+			</place>
+			<place id="c7">
+				<name>
+					<text>c7</text>
+				</name>
+				<originalNode ref="p22">
+					<text>source 724</text>
+				</originalNode>
+			</place>
+			<place id="c8">
+				<name>
+					<text>c8</text>
+				</name>
+				<originalNode ref="p23">
+					<text>source 726</text>
+				</originalNode>
+			</place>
+			<place id="c9">
+				<name>
+					<text>c9</text>
+				</name>
+				<originalNode ref="p24">
+					<text>source 728</text>
+				</originalNode>
+			</place>
+			<place id="c10">
+				<name>
+					<text>c10</text>
+				</name>
+				<originalNode ref="p4">
+					<text>sink 725</text>
+				</originalNode>
+			</place>
+			<place id="c11">
+				<name>
+					<text>c11</text>
+				</name>
+				<originalNode ref="p5">
+					<text>sink 727</text>
+				</originalNode>
+			</place>
+			<place id="c12">
+				<name>
+					<text>c12</text>
+				</name>
+				<originalNode ref="p7">
+					<text>sink 731</text>
+				</originalNode>
+			</place>
+			<place id="c13">
+				<name>
+					<text>c13</text>
+				</name>
+				<originalNode ref="p10">
+					<text>sink 735</text>
+				</originalNode>
+			</place>
+			<place id="c14">
+				<name>
+					<text>c14</text>
+				</name>
+				<originalNode ref="p9">
+					<text>sink 734</text>
+				</originalNode>
+			</place>
+			<place id="c15">
+				<name>
+					<text>c15</text>
+				</name>
+				<originalNode ref="p8">
+					<text>sink 733</text>
+				</originalNode>
+			</place>
+			<place id="c16">
+				<name>
+					<text>c16</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c17">
+				<name>
+					<text>c17</text>
+				</name>
+				<originalNode ref="p11">
+					<text>sink 736</text>
+				</originalNode>
+			</place>
+			<place id="c18">
+				<name>
+					<text>c18</text>
+				</name>
+				<originalNode ref="p14">
+					<text>sink 739</text>
+				</originalNode>
+			</place>
+			<place id="c19">
+				<name>
+					<text>c19</text>
+				</name>
+				<originalNode ref="p15">
+					<text>sink 740</text>
+				</originalNode>
+			</place>
+			<place id="c20">
+				<name>
+					<text>c20</text>
+				</name>
+				<originalNode ref="p13">
+					<text>sink 738</text>
+				</originalNode>
+			</place>
+			<place id="c21">
+				<name>
+					<text>c21</text>
+				</name>
+				<originalNode ref="p12">
+					<text>sink 737</text>
+				</originalNode>
+			</place>
+			<place id="c22">
+				<name>
+					<text>c22</text>
+				</name>
+				<originalNode ref="p25">
+					<text>source 741</text>
+				</originalNode>
+			</place>
+			<place id="c23">
+				<name>
+					<text>c23</text>
+				</name>
+				<originalNode ref="p26">
+					<text>source 743</text>
+				</originalNode>
+			</place>
+			<place id="c24">
+				<name>
+					<text>c24</text>
+				</name>
+				<originalNode ref="p18">
+					<text>middle 730</text>
+				</originalNode>
+			</place>
+			<place id="c25">
+				<name>
+					<text>c25</text>
+				</name>
+				<originalNode ref="p17">
+					<text>sink 744</text>
+				</originalNode>
+			</place>
+			<place id="c26">
+				<name>
+					<text>c26</text>
+				</name>
+				<originalNode ref="p16">
+					<text>sink 742</text>
+				</originalNode>
+			</place>
+			<place id="c27">
+				<name>
+					<text>c27</text>
+				</name>
+				<originalNode ref="p6">
+					<text>sink 729</text>
+				</originalNode>
+			</place>
+			<place id="c28">
+				<name>
+					<text>c28</text>
+				</name>
+				<originalNode ref="p2">
+					<text>sink 722</text>
+				</originalNode>
+			</place>
+			<place id="c29">
+				<name>
+					<text>c29</text>
+				</name>
+				<originalNode ref="p3">
+					<text>sink 723</text>
+				</originalNode>
+			</place>
+			<place id="c30">
+				<name>
+					<text>c30</text>
+				</name>
+				<originalNode ref="p27">
+					<text>replacement source 746</text>
+				</originalNode>
+			</place>
+			<place id="c31">
+				<name>
+					<text>c31</text>
+				</name>
+				<originalNode ref="p0">
+					<text>sink 720</text>
+				</originalNode>
+			</place>
+			<place id="c32">
+				<name>
+					<text>c32</text>
+				</name>
+				<originalNode ref="p10">
+					<text>sink 735</text>
+				</originalNode>
+			</place>
+			<place id="c33">
+				<name>
+					<text>c33</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c34">
+				<name>
+					<text>c34</text>
+				</name>
+				<originalNode ref="p7">
+					<text>sink 731</text>
+				</originalNode>
+			</place>
+			<place id="c35">
+				<name>
+					<text>c35</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c36">
+				<name>
+					<text>c36</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c37">
+				<name>
+					<text>c37</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c38">
+				<name>
+					<text>c38</text>
+				</name>
+				<originalNode ref="p8">
+					<text>sink 733</text>
+				</originalNode>
+			</place>
+			<place id="c39">
+				<name>
+					<text>c39</text>
+				</name>
+				<originalNode ref="p24">
+					<text>source 728</text>
+				</originalNode>
+			</place>
+			<place id="c40">
+				<name>
+					<text>c40</text>
+				</name>
+				<originalNode ref="p17">
+					<text>sink 744</text>
+				</originalNode>
+			</place>
+			<place id="c41">
+				<name>
+					<text>c41</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c42">
+				<name>
+					<text>c42</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c43">
+				<name>
+					<text>c43</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c44">
+				<name>
+					<text>c44</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c45">
+				<name>
+					<text>c45</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c46">
+				<name>
+					<text>c46</text>
+				</name>
+				<originalNode ref="p19">
+					<text>middle 732</text>
+				</originalNode>
+			</place>
+			<place id="c47">
+				<name>
+					<text>c47</text>
+				</name>
+				<originalNode ref="p9">
+					<text>sink 734</text>
+				</originalNode>
+			</place>
+			<place id="c48">
+				<name>
+					<text>c48</text>
+				</name>
+				<originalNode ref="p7">
+					<text>sink 731</text>
+				</originalNode>
+			</place>
+			<place id="c49">
+				<name>
+					<text>c49</text>
+				</name>
+				<originalNode ref="p0">
+					<text>sink 720</text>
+				</originalNode>
+			</place>
+			<transition id="e0">
+				<name>
+					<text>e0</text>
+				</name>
+				<originalNode ref="t38">
+					<text>A_Create Application</text>
+				</originalNode>
+			</transition>
+			<transition id="e1">
+				<name>
+					<text>e1</text>
+				</name>
+				<originalNode ref="t15">
+					<text>A_Submitted</text>
+				</originalNode>
+			</transition>
+			<transition id="e2">
+				<name>
+					<text>e2</text>
+				</name>
+				<originalNode ref="t9">
+					<text>tau start</text>
+				</originalNode>
+			</transition>
+			<transition id="e3">
+				<name>
+					<text>e3</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+			</transition>
+			<transition id="e4">
+				<name>
+					<text>e4</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+			</transition>
+			<transition id="e5">
+				<name>
+					<text>e5</text>
+				</name>
+				<originalNode ref="t45">
+					<text>W_Assess potential fraud</text>
+				</originalNode>
+			</transition>
+			<transition id="e6">
+				<name>
+					<text>e6</text>
+				</name>
+				<originalNode ref="t7">
+					<text>tau split</text>
+				</originalNode>
+			</transition>
+			<transition id="e7">
+				<name>
+					<text>e7</text>
+				</name>
+				<originalNode ref="t3">
+					<text>A_Concept</text>
+				</originalNode>
+			</transition>
+			<transition id="e8">
+				<name>
+					<text>e8</text>
+				</name>
+				<originalNode ref="t10">
+					<text>A_Accepted</text>
+				</originalNode>
+			</transition>
+			<transition id="e9">
+				<name>
+					<text>e9</text>
+				</name>
+				<originalNode ref="t40">
+					<text>W_Complete application</text>
+				</originalNode>
+			</transition>
+			<transition id="e10">
+				<name>
+					<text>e10</text>
+				</name>
+				<originalNode ref="t17">
+					<text>A_Incomplete</text>
+				</originalNode>
+			</transition>
+			<transition id="e11">
+				<name>
+					<text>e11</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+			</transition>
+			<transition id="e12">
+				<name>
+					<text>e12</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+			</transition>
+			<transition id="e13">
+				<name>
+					<text>e13</text>
+				</name>
+				<originalNode ref="t39">
+					<text>O_Sent (online only)</text>
+				</originalNode>
+			</transition>
+			<transition id="e14">
+				<name>
+					<text>e14</text>
+				</name>
+				<originalNode ref="t12">
+					<text>O_Accepted</text>
+				</originalNode>
+			</transition>
+			<transition id="e15">
+				<name>
+					<text>e15</text>
+				</name>
+				<originalNode ref="t0">
+					<text>A_Denied</text>
+				</originalNode>
+			</transition>
+			<transition id="e16">
+				<name>
+					<text>e16</text>
+				</name>
+				<originalNode ref="t35">
+					<text>O_Create Offer</text>
+				</originalNode>
+			</transition>
+			<transition id="e17">
+				<name>
+					<text>e17</text>
+				</name>
+				<originalNode ref="t37">
+					<text>W_Call after offers</text>
+				</originalNode>
+			</transition>
+			<transition id="e18">
+				<name>
+					<text>e18</text>
+				</name>
+				<originalNode ref="t42">
+					<text>W_Validate application</text>
+				</originalNode>
+			</transition>
+			<transition id="e19">
+				<name>
+					<text>e19</text>
+				</name>
+				<originalNode ref="t7">
+					<text>tau split</text>
+				</originalNode>
+			</transition>
+			<transition id="e20">
+				<name>
+					<text>e20</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+			</transition>
+			<transition id="e21">
+				<name>
+					<text>e21</text>
+				</name>
+				<originalNode ref="t14">
+					<text>A_Cancelled</text>
+				</originalNode>
+			</transition>
+			<transition id="e22">
+				<name>
+					<text>e22</text>
+				</name>
+				<originalNode ref="t16">
+					<text>O_Cancelled</text>
+				</originalNode>
+			</transition>
+			<transition id="e23">
+				<name>
+					<text>e23</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+			</transition>
+			<transition id="e24">
+				<name>
+					<text>e24</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e1</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e25">
+				<name>
+					<text>e25</text>
+				</name>
+				<originalNode ref="t36">
+					<text>W_Handle leads</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e4</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e26">
+				<name>
+					<text>e26</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e2</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e27">
+				<name>
+					<text>e27</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e3</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e28">
+				<name>
+					<text>e28</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e10</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e29">
+				<name>
+					<text>e29</text>
+				</name>
+				<originalNode ref="t44">
+					<text>O_Sent (mail and online)</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e30">
+				<name>
+					<text>e30</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e9</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e31">
+				<name>
+					<text>e31</text>
+				</name>
+				<originalNode ref="t13">
+					<text>O_Returned</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e32">
+				<name>
+					<text>e32</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e33">
+				<name>
+					<text>e33</text>
+				</name>
+				<originalNode ref="t41">
+					<text>W_Shortened completion</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e34">
+				<name>
+					<text>e34</text>
+				</name>
+				<originalNode ref="t43">
+					<text>W_Call incomplete files</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e12</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e35">
+				<name>
+					<text>e35</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e6</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e36">
+				<name>
+					<text>e36</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e21</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e37">
+				<name>
+					<text>e37</text>
+				</name>
+				<originalNode ref="t18">
+					<text>A_Validating</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e38">
+				<name>
+					<text>e38</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e39">
+				<name>
+					<text>e39</text>
+				</name>
+				<originalNode ref="t11">
+					<text>A_Complete</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e40">
+				<name>
+					<text>e40</text>
+				</name>
+				<originalNode ref="t19">
+					<text>tau from tree</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e41">
+				<name>
+					<text>e41</text>
+				</name>
+				<originalNode ref="t5">
+					<text>O_Created</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e42">
+				<name>
+					<text>e42</text>
+				</name>
+				<originalNode ref="t6">
+					<text>O_Refused</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e13</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e43">
+				<name>
+					<text>e43</text>
+				</name>
+				<originalNode ref="t4">
+					<text>A_Pending</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e11</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e44">
+				<name>
+					<text>e44</text>
+				</name>
+				<originalNode ref="t1">
+					<text>tau join</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e9</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<transition id="e45">
+				<name>
+					<text>e45</text>
+				</name>
+				<originalNode ref="t1">
+					<text>tau join</text>
+				</originalNode>
+				<cut-off>
+					<text>cut-off</text>
+					<correspondent>
+						<ref>e3</ref>
+					</correspondent>
+				</cut-off>
+			</transition>
+			<arc source="c0" target="e0"/>
+			<arc source="e0" target="c1"/>
+			<arc source="c1" target="e1"/>
+			<arc source="e1" target="c2"/>
+			<arc source="c2" target="e2"/>
+			<arc source="e2" target="c3"/>
+			<arc source="c2" target="e3"/>
+			<arc source="e3" target="c4"/>
+			<arc source="c2" target="e4"/>
+			<arc source="e4" target="c5"/>
+			<arc source="c3" target="e5"/>
+			<arc source="e5" target="c6"/>
+			<arc source="c5" target="e6"/>
+			<arc source="e6" target="c7"/>
+			<arc source="e6" target="c8"/>
+			<arc source="e6" target="c9"/>
+			<arc source="c7" target="e7"/>
+			<arc source="e7" target="c10"/>
+			<arc source="c8" target="e8"/>
+			<arc source="e8" target="c11"/>
+			<arc source="c9" target="e9"/>
+			<arc source="e9" target="c12"/>
+			<arc source="c12" target="e10"/>
+			<arc source="e10" target="c13"/>
+			<arc source="c12" target="e11"/>
+			<arc source="e11" target="c14"/>
+			<arc source="c12" target="e12"/>
+			<arc source="e12" target="c15"/>
+			<arc source="c12" target="e13"/>
+			<arc source="e13" target="c16"/>
+			<arc source="c13" target="e14"/>
+			<arc source="e14" target="c17"/>
+			<arc source="c15" target="e15"/>
+			<arc source="e15" target="c18"/>
+			<arc source="c15" target="e16"/>
+			<arc source="e16" target="c19"/>
+			<arc source="c15" target="e17"/>
+			<arc source="e17" target="c20"/>
+			<arc source="c15" target="e18"/>
+			<arc source="e18" target="c21"/>
+			<arc source="c16" target="e19"/>
+			<arc source="e19" target="c22"/>
+			<arc source="e19" target="c23"/>
+			<arc source="c16" target="e20"/>
+			<arc source="e20" target="c24"/>
+			<arc source="c23" target="e21"/>
+			<arc source="e21" target="c25"/>
+			<arc source="c22" target="e22"/>
+			<arc source="e22" target="c26"/>
+			<arc source="c24" target="e23"/>
+			<arc source="e23" target="c27"/>
+			<arc source="c1" target="e24"/>
+			<arc source="e24" target="c28"/>
+			<arc source="c2" target="e25"/>
+			<arc source="e25" target="c29"/>
+			<arc source="c6" target="e26"/>
+			<arc source="e26" target="c30"/>
+			<arc source="c6" target="e27"/>
+			<arc source="e27" target="c31"/>
+			<arc source="c12" target="e28"/>
+			<arc source="e28" target="c32"/>
+			<arc source="c12" target="e29"/>
+			<arc source="e29" target="c33"/>
+			<arc source="c16" target="e30"/>
+			<arc source="e30" target="c34"/>
+			<arc source="c15" target="e31"/>
+			<arc source="e31" target="c35"/>
+			<arc source="c15" target="e32"/>
+			<arc source="e32" target="c36"/>
+			<arc source="c15" target="e33"/>
+			<arc source="e33" target="c37"/>
+			<arc source="c14" target="e34"/>
+			<arc source="e34" target="c38"/>
+			<arc source="c24" target="e35"/>
+			<arc source="e35" target="c39"/>
+			<arc source="c23" target="e36"/>
+			<arc source="e36" target="c40"/>
+			<arc source="c21" target="e37"/>
+			<arc source="e37" target="c41"/>
+			<arc source="c21" target="e38"/>
+			<arc source="e38" target="c42"/>
+			<arc source="c20" target="e39"/>
+			<arc source="e39" target="c43"/>
+			<arc source="c20" target="e40"/>
+			<arc source="e40" target="c44"/>
+			<arc source="c19" target="e41"/>
+			<arc source="e41" target="c45"/>
+			<arc source="c18" target="e42"/>
+			<arc source="e42" target="c46"/>
+			<arc source="c17" target="e43"/>
+			<arc source="e43" target="c47"/>
+			<arc source="c25" target="e44"/>
+			<arc source="c26" target="e44"/>
+			<arc source="e44" target="c48"/>
+			<arc source="c10" target="e45"/>
+			<arc source="c11" target="e45"/>
+			<arc source="c27" target="e45"/>
+			<arc source="e45" target="c49"/>
+		</page>
+	</net>
+</pnml>
+
