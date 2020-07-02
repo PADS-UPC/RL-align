@@ -25,6 +25,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <climits>
 
@@ -59,161 +60,14 @@ void merge(list<string> &path, const list<string> &elems) {
 }
 
 
-// compute nodes needed to go from src to targ in g
-struct path {
-  bool found;  // whether requested path was found
-  list<string> elems;  // graph elements forming the path
-  int nested; // number of nested parallel blocks when src was found
-};
-
-// predeclaration
-path required(const graph &g, string src, string targ, list<string> &seen, int depth);
-
-
-// treat all antecessors of a parallel join and make sure all paths are satisfied
-
-path parallel_join(const graph &g, string src, string targ, list<string> &seen, bool push, int depth) {
-  path ret;
-  ret.found = false;
-  ret.nested = 0;
-  int nok = 0;
-  set<string> in = g.get_in_edges(targ);
-  for (auto ant : in) {
-    TRACE(3,"[required]    parallel at "<<targ<< " checking pred="<<ant);
-    if (push) seen.push_back(targ);
-    path r = required(g, src, ant, seen, depth);
-    if (push) seen.pop_back();
-
-    if (r.found) {
-      merge(ret.elems, r.elems);  // current subpath works, merge with previous
-      ret.nested = depth;
-      ++nok;
-    }
-  }
-  
-  // if all subpaths work (or only one but inside depth), return true
-  if (nok == int(in.size())) {
-    TRACE(3,"[required]    parallel at "<<targ<< " all branches check");
-    ret.found = true;
-    ret.elems.push_back(targ);
-    ret.nested = 0;
-  }
-  else if (nok>0 and ret.nested>=depth) {
-    TRACE(3,"[required]    parallel at "<<targ<< " one branches checks with depth limits");
-    ret.found = true;
-    ret.elems.push_back(targ);
-  }
-  else {
-    TRACE(3,"[required]    parallel at "<<targ<< " no branches check");
-    ret.found = false;
-  }
-  return ret;
-}
-
-// treat all antecessors of an exclusive join and find shortest path, if any
-
-path exclusive_join(const graph &g, string src, string targ, list<string> &seen, bool push, int depth) {
-  path ret;
-  ret.found = false;
-  ret.nested = 0;
-  int minlen = g.get_num_nodes()*2;// initialize min to a big number;
-  set<string> in = g.get_in_edges(targ);
-  for (auto ant : in) {
-    TRACE(3,"[required]    exclusive at "<<targ<< " checking pred="<<ant);
-    if (push) seen.push_back(targ);
-    path r = required(g, src, ant, seen, depth);
-    if (push) seen.pop_back();
-
-    if (r.found) {
-      int ps = r.elems.size();
-      if (ps < minlen) {
-        ret = r;
-        minlen = ps;
-      }
-    }
-  }
-  
-  if (ret.found) {
-    TRACE(3,"[required]    exclusive at "<<targ<< " shortest branch found");
-    ret.elems.push_back(targ);
-  }
-  return ret;        
-}
-
-
-// recursively find shortest path from src to targ.
-
-path required(const graph &g, string src, string targ, list<string> &seen, int depth) {
-
-  string ss; for (auto i : seen) ss += " "+i;
-  TRACE(2, "[required] entering at " << targ << " looking back for " <<src << " seen=["<<ss<<"]");
-
-  path ret;
-  ret.nested = 0;
-  
-  if (src == targ) {
-    ret.found = true;
-    ret.nested = depth;
-    return ret;
-  }
-
-  else {
-    set<string> in = g.get_in_edges(targ);
-    set<string> out = g.get_out_edges(targ);
-
-    if (g.get_node(targ).type == node::TRANSITION) {
-      // if parallel split and/or join, adjust depth level
-      if (in.size()>1) ++depth;
-      if (out.size()>1) --depth;
-    }
-    
-    if (in.size()==0 or g.is_initial(targ) ) {
-      TRACE(2,"[required] reached top - return false");
-      // we reached the initial node, a node with no antecessors without finding src: There is no path.
-      ret.found = false;
-      return ret;
-    }
-
-    else if (belongs(targ,seen)) {
-     TRACE(2,"[required] loop detected - return false" << (g.get_node(targ).type == node::TRANSITION));
-     // we are in a node that was already visited
-     ret.found =  false;
-     return ret;
-    }
-    
-    else if (in.size() == 1) {
-      // only one antecessor, just add it to the solution
-      string ant = *in.begin();
-      seen.push_back(targ);
-      ret = required(g, src, ant, seen, depth);
-      seen.pop_back();
-      if (ret.found) ret.elems.push_back(targ);
-      return ret;
-    }
-
-    else if (g.get_node(targ).type == node::TRANSITION) {
-      // A TRANSITION with more than one antecessor is a parallel join: all paths are required
-      TRACE(2,"[required] parellel join detected at "<<targ);
-      return parallel_join(g, src, targ, seen, true, depth);
-    }
-
-    else {
-      // A PLACE with more than one antecessor is an exclusive join: select shortest path
-      TRACE(2,"[required] exclusive deteted at "<< targ);
-      return exclusive_join(g, src, targ, seen, true, depth);
-    } 
-  }
-}
-
-
 // check if the path pik+pkj includes a parallel section. If it does, it must be complete.
 
-bool valid_path(const string &i, map<string,path>::iterator pik, map<string,path>::iterator pkj, const map<string,string> &parallels, const map<string,path> &paths) {
+bool valid_path(const string &i, map<string,list<string>>::iterator pik, map<string,list<string>>::iterator pkj, const map<string,string> &parallels, const map<string,list<string>> &paths) {
 
   list<string> s;
   s.push_back(i);
-  s.insert(s.end(), pik->second.elems.begin(), pik->second.elems.end());
-  s.insert(s.end(), pkj->second.elems.begin(), pkj->second.elems.end());
+  s.insert(s.end(), pik->second.begin(), pik->second.end());
+  s.insert(s.end(), pkj->second.begin(), pkj->second.end());
 
   bool ok = true;
   for (auto e = s.begin(); e!=s.end() and ok; ++e) {
@@ -229,12 +83,237 @@ bool valid_path(const string &i, map<string,path>::iterator pik, map<string,path
       }
       
       // parallel limits where there, but middle was not complete, do not use this path.
-      if (f!=s.end() and n < paths.find(split+":::"+join)->second.elems.size()) 
+      if (f!=s.end() and n < paths.find(split+":::"+join)->second.size()) 
            return false;
     }
   }
   
   return true;
+}
+
+/// recursive auxiliary for find_matching_join, doing the actual work
+
+string find_matching_join(const graph &g, const set<string> &open, set<string> visited) {
+
+  set<string> ptr = g.possible_transitions(open);
+  TRACE(3,"  open={" <<set2string(open)<<"}  ptr={"<<set2string(ptr)<<"}  visited={"<<set2string(visited)<<"}");
+
+  // compute intersection of transitions accessble from all open places
+  set<string> outs = g.get_out_edges(*(open.begin()));
+  for (auto op : open)
+    outs = intersection_set(outs,g.get_out_edges(op));
+
+  // if the intersection of all open places is exactly one
+  // transition, that is the join we were looking for.
+  if (outs.size()==1) return *(outs.begin());
+  // if no possible transitions, backtrace  
+  else if (ptr.size()==0) return "";
+  // if a loop is detected, backtrace
+  else if (not intersection_set(open, visited).empty()) return "";
+  // recurse into all possible transitions.
+  else {   
+    // fire all transitions that can be fired simultaneously (no conflicts involved)
+    set<string> newopen = open;
+    set<string> fired;
+    for (auto p : open) {
+      if (not g.is_exclusive_split(p)) {
+        for (auto t : intersection_set(ptr,g.get_out_edges(p))) {
+          newopen = g.fire_transition(newopen,t);
+          fired.insert(t);
+          visited.insert(p);
+        }
+      }
+    }
+
+    ptr = difference_set(ptr,fired);
+    if (ptr.empty()) {
+      // no conflicts, just continue from current situation
+      string found = find_matching_join(g, newopen, visited);
+      if (found!="") return found;
+    }
+    else {
+      // remaining transitions are in conflict, use backtracking
+      for (auto t : ptr) {
+        string found = find_matching_join(g, g.fire_transition(newopen,t), union_set(visited, g.get_in_edges(t)));
+        if (found!="") return found;
+      }
+    }
+    
+    return "";
+  }
+}
+
+
+/// find matching join for given parallel split
+
+string find_matching_join(const graph &g, const string &split) {
+  set<string> visited;
+  return find_matching_join(g, g.get_out_edges(split), visited);
+}
+
+
+
+//////////////////////////////////////////////////////
+/// init matrix for Floyd
+
+void init_path_matrix(graph &g, map<string,list<string>> &paths, map<string,string> &parallels) {
+
+  TRACE(1,"Init matrix");
+  list<string> nodes = g.get_nodes_by_id();  
+  for (auto n : nodes) {
+    TRACE(1,"Init node "<<n);
+    // init path matrix with direct edges
+    set<string> succ = g.get_out_edges(n);
+    for (auto s : succ) {
+      list<string> p;
+      p.push_back(s);
+      paths[n+":::"+s] = p;
+    }
+
+    // node to self, cost zero
+    list<string> p;
+    paths[n+":::"+n] = p;
+
+    // for parallel splits, compute path to matching parallel join
+    if (g.is_parallel_split(n)) { 
+      TRACE(2," is parallel split "<<n);
+      string s = find_matching_join(g, n);
+      if (s=="") { ERROR_CRASH("Couldn't find matching join for "<<n); }
+      TRACE(2," found join at "<<s);
+
+      list<string> p;
+      // use A* to find shortest path to matching join
+      g.BFS_LIMIT = 2000;
+      bool found = g.find_path(g.get_out_edges(n), s, p);
+      if (not found) {
+        WARNING("Path not found from "<<n<<" to "<<s<<". Using simulation");
+
+        // taking too long for A*, sample a number of random paths to matching join and select shortest.
+        g.NUM_SAMPLE_PATHS = 200;
+        p = g.find_path_by_sampling(n,s);
+        if (p.empty()) {
+          ERROR_CRASH("Simulation could not find a path from "<<n<<" to "<<s);
+        }
+      }
+
+      TRACE(2,"PATH "<<n<<":"<<s<<"="<<list2string(p));
+
+      paths[n+":::"+s] = p;
+      parallels[n] = s;
+    }
+  }
+}
+  
+//////////////////////////////////////////////////////
+/// compute all distances using Floyd variant.
+
+void floyd(const graph &g, map<string,list<string>> &paths, const map<string,string> &parallels) {
+  TRACE(1,"Begin Floyd");
+  // adapted floyd algorithm
+  list<string> nodes = g.get_nodes_by_id();  
+  for (auto k : nodes) {
+    for (auto i : nodes) {
+      for (auto j : nodes) {
+        // if i-j is a complete parallel block, do not update cost. (this is the only adaptation needed)
+        auto par = parallels.find(i);
+        if (par!=parallels.end() and par->second==j) continue;
+
+        // find current path from i to j
+        auto pij = paths.find(i+":::"+j);
+        // find paths from i to k, and from k to j
+        auto pik = paths.find(i+":::"+k);
+        auto pkj = paths.find(k+":::"+j);
+        // if pik and pij exist and are better than pij, replace path
+        if (pik != paths.end() and pkj != paths.end() and valid_path(i,pik,pkj,parallels,paths)) {
+          if (pij == paths.end() or pij->second.size() > pik->second.size()+pkj->second.size()) {
+            list<string> p;
+            p.insert(p.end(), pik->second.begin(), pik->second.end());
+            p.insert(p.end(), pkj->second.begin(), pkj->second.end());
+            paths[i+":::"+j] = p;
+          }
+        }
+      }
+    }
+  }
+  TRACE(1,"End Floyd");
+}
+
+void fix_self_paths(const graph &g, map<string,list<string>> &paths, const map<string,string> &parallels) {
+
+  list<string> nodes = g.get_nodes_by_id();  
+  for (auto i : nodes) {
+    bool found = false;
+    if (g.is_parallel_split(i)){
+      // if it is a parallel split, the best path i->i is running the whole parallel
+      // and then going from the join to the split again
+      string s = parallels.find(i)->second;
+      auto psi= paths.find(s+":::"+i);
+      if (psi!=paths.end()) {
+        list<string> p;
+        auto pis = paths.find(i+":::"+s);
+        p.insert(p.end(), pis->second.begin(), pis->second.end());
+        p.insert(p.end(), psi->second.begin(), psi->second.end());
+        paths[i+":::"+i] = p;
+        found = true;
+      }
+    }
+    else {
+      // not a parallel split. The best path to i->i is the best path from any successor of i
+      set<string> succ = g.get_out_edges(i);
+      size_t min = g.get_num_nodes()*2;
+      string best;
+      for (auto s : succ) {
+        auto psi = paths.find(s+":::"+i);
+        if (psi!=paths.end() and psi->second.size()<min) {
+          min = psi->second.size();
+          best = s;
+        }
+      }
+      if (best!="") {
+        list<string> p = paths.find(best+":::"+i)->second;
+        p.push_front(best);
+        paths[i+":::"+i] = p;
+        found = true;
+      }
+    }
+    if (not found) paths.erase(i+":::"+i);
+  }
+}
+
+//////////////////////////////////////////////////////                            
+/// print resulting path matrix                                                   
+
+void output_path_matrix(ostream &sout, const graph &g, const map<string,list<string>> &paths) {
+
+  list<string> nodes = g.get_nodes_by_id();
+  for (auto i : nodes) {
+    for (auto j : nodes) {
+      int nn=0;
+      string s = "";
+      auto pij = paths.find(i+":::"+j);
+      if (pij != paths.end()) {
+        for (auto p : pij->second) {
+            s +=  " " + p;
+            ++nn;
+        }
+        // remove last node in the sequence (just a repetition of targ)           
+
+        auto k = s.rfind(" "+j);
+        s = s.substr(0,k);
+      }
+
+      sout << "PATH " << i << " " << j << " " << nn-1 << s << endl;
+    }
+  }
+}
+
+
+//////////////////////////////////////////////////////                            
+/// print parallel regions
+
+void output_parallels(ostream &sout, const map<string,string> par) {
+  for (auto p : par)
+    sout << "PARALLEL "<< p.first << " " << p.second << endl;
 }
 
 /// ===========================
@@ -257,137 +336,20 @@ int main(int argc, char *argv[]) {
   if (which==graph::UNFOLDING)
     g.add_node(node(node::TRANSITION, graph::DUMMY, graph::DUMMY));  // add "dummy" node
   
-  
-  list<string> nodes = g.get_nodes_by_id();
-  map<string,path> paths;
+  // Init cost matrix
+  map<string,list<string>> paths;
   map<string,string> parallels;
-      
-  for (auto n : nodes) {
-    TRACE(1,"Init node "<<n);
-    // init path matrix with direct edges
-    set<string> succ = g.get_out_edges(n);
-    for (auto s : succ) {
-      path p;
-      p.elems.push_back(s);
-      paths[n+":::"+s] = p;
-    }
+  init_path_matrix(g, paths, parallels);
 
-    // node to self, cost zero
-    path p;
-    paths[n+":::"+n] = p;
+  // compute all distances using Floyd variant.
+  floyd(g, paths, parallels);
 
-    // for parallel splits, compute path to matching parallel join
-    if (g.is_parallel_split(n)) { 
-      TRACE(2," is parallel split "<<n);
-      string s = g.find_matching_join(n);
-      TRACE(2," found join at "<<s);
-
-      // deprecated, used brute force, too slow in some cases.
-      //list<string> seen;
-      //path p = required(g, n, s, seen, 0);
-
-      // now use A* to find shortest path to matching join
-      path p;
-      list<string> ls;
-      p.found = g.find_path(g.get_out_edges(n), s, p.elems);
-      if (not p.found) {
-        WARNING("Path not found from "<<n<<" to "<<s);
-      }
-      else
-        TRACE(2,"PATH "<<n<<":"<<s<<"="<<list2string(p.elems));
-
-      paths[n+":::"+s] = p;
-      parallels[n] = s;
-    }
-  }
-
-  TRACE(1,"Begin Floyd");
-  // adapted floyd algorithm
-  for (auto k : nodes) {
-    for (auto i : nodes) {
-      for (auto j : nodes) {
-        // if i-j is a complete parallel block, do not update cost. (this is the only adaptation needed)
-        auto par = parallels.find(i);
-        if (par!=parallels.end() and par->second==j) continue;
-
-        // find current path from i to j
-        auto pij = paths.find(i+":::"+j);
-        // find paths from i to k, and from k to j
-        auto pik = paths.find(i+":::"+k);
-        auto pkj = paths.find(k+":::"+j);
-        // if pik and pij exist and are better than pij, replace path
-        if (pik != paths.end() and pkj != paths.end() and valid_path(i,pik,pkj,parallels,paths)) {
-          if (pij == paths.end() or pij->second.elems.size() > pik->second.elems.size()+pkj->second.elems.size()) {
-            path p;
-            p.elems.insert(p.elems.end(), pik->second.elems.begin(), pik->second.elems.end());
-            p.elems.insert(p.elems.end(), pkj->second.elems.begin(), pkj->second.elems.end());
-            paths[i+":::"+j] = p;
-          }
-        }
-      }
-    }
-  }
-  TRACE(1,"End Floyd");
-
-  // we want paths from one note to itself to capture loops, if there are any
-  for (auto i : nodes) {
-    bool found = false;
-    if (g.is_parallel_split(i)){
-      // if it is a parallel split, the best path i->i is running the whole parallel and then goind from the join to the split again
-      string s = g.find_matching_join(i);
-      auto psi= paths.find(s+":::"+i);
-      if (psi!=paths.end()) {
-        path p;
-        auto pis = paths.find(i+":::"+s);
-        p.elems.insert(p.elems.end(), pis->second.elems.begin(), pis->second.elems.end());
-        p.elems.insert(p.elems.end(), psi->second.elems.begin(), psi->second.elems.end());
-        paths[i+":::"+i] = p;
-        found = true;
-      }
-    }
-    else {
-      // not a parallel split. The best path to i->i is the best path from any successor of i
-      set<string> succ = g.get_out_edges(i);
-      size_t min = g.get_num_nodes()*2;
-      string best;
-      for (auto s : succ) {
-        auto psi = paths.find(s+":::"+i);
-        if (psi!=paths.end() and psi->second.elems.size()<min) {
-          min = psi->second.elems.size();
-          best = s;
-        }
-      }
-      if (best!="") {
-        path p = paths.find(best+":::"+i)->second;
-        p.elems.push_front(best);
-        paths[i+":::"+i] = p;
-        found = true;
-      }
-    }
-    if (not found) paths.erase(i+":::"+i);
-  }
-
+  // fix self-paths (we want paths from one note to itself to capture loops, if there are any)
+  fix_self_paths(g, paths, parallels);
   
-  // print result
-  for (auto i : nodes) {
-    for (auto j : nodes) {
-      int nn=0;
-      string s = "";
-      auto pij = paths.find(i+":::"+j);
-      if (pij != paths.end()) {
-        for (auto p : pij->second.elems) {
-            s +=  " " + p;
-            ++nn;
-        }
-        // remove last node in the sequence (just a repetition of targ)
-        auto k = s.find(" "+j);
-        s = s.substr(0,k);
-      }
-
-      cout << i << " " << j << " " << nn-1 << s << endl;
-    }
-  }
-
+  TRACE(1,"Output paths");
+  output_path_matrix(cout, g, paths);
+  output_parallels(cout, parallels);
 }
 
 

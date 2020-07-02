@@ -45,7 +45,6 @@ behavioral_profile::behavioral_profile(const std::string &bpfile) {
   fin.open(bpfile);
   string n1,n2,rel;
   while (fin>>n1>>n2>>rel) {
-    if (rel=="+") rel="xx"; // visualizes nicer
     relType r = get_rel_type(rel);
     add_relation(n1,n2,r);
     if (n1!=n2) add_relation(n2,n1,inverse(r));   
@@ -84,18 +83,18 @@ behavioral_profile::relType behavioral_profile::get_rel_type(const std::string &
   if (relname=="->") return PRECEDES;
   else if (relname=="<-") return FOLLOWS;
   else if (relname=="||") return INTERLEAVED;
-  else if (relname=="xx") return EXCLUSIVE;
+  else if (relname=="+" or relname=="xx") return EXCLUSIVE;
   else return NO_RELATION;
 }
 
 /// convert from relation internal code to printable symbol
 
-std::string behavioral_profile::get_rel_name(relType r) {
+std::string behavioral_profile::get_rel_name(relType r, bool table) {
   switch (r) {
     case PRECEDES : return "->";
     case FOLLOWS: return "<-";
     case INTERLEAVED: return "||";
-    case EXCLUSIVE: return "xx";
+    case EXCLUSIVE: if (table) return "xx"; else return "+";
 
     case NO_RELATION: 
     default:
@@ -124,11 +123,11 @@ string behavioral_profile::dump(bool table) const {
     if (table) {
       if (r.first.first != ant) s += "\n ";
       else s += "\t";
-      s += r.first.first + " " + get_rel_name(r.second) + " " + r.first.second;
+      s += r.first.first + " " + get_rel_name(r.second,table) + " " + r.first.second;
       ant = r.first.first;
     }
     else
-      s += r.first.first + " " + r.first.second + " " + get_rel_name(r.second) + "\n";      
+      s += r.first.first + " " + r.first.second + " " + get_rel_name(r.second,table) + "\n";      
   }
   return s;
 }

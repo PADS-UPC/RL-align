@@ -43,6 +43,30 @@ set<string> union_set(const set<string> &big, const set<string> &small) {
   return uni;
 }
 
+set<string> intersection_set(const set<string> &big, const set<string> &small) {
+  set<string> inter;
+  set_intersection(big.begin(), big.end(), small.begin(), small.end(), std::inserter(inter, inter.begin()));
+  return inter;
+}
+
+string first_common_element(const list<string> &a, const list<string> &b) {
+
+  string fce;
+  auto pa = a.rbegin();
+  auto pb = b.rbegin();
+  while (pa!=a.rend() and pb!=b.rend() and *pa==*pb) {
+    fce = *pa;
+    ++pa;
+    ++pb;
+  }
+  if (pa!=a.rend() and pb!=b.rend()) return fce;
+  else return "";
+}
+
+void extend_list(list<string> &path, const set<string> &nodes) {
+  path.insert(path.end(), nodes.begin(), nodes.end());
+}
+                 
 string set2string(const set<string> &ss) {  
   stringstream s;
   for (auto x : ss) s<<" "<<x;
@@ -58,6 +82,13 @@ string vector2string(const vector<string> &ss) {
 }
 
 string list2string(const list<string> &ss) {  
+  stringstream s;
+  for (auto x : ss) s<<" "<<x;
+  if (s.str().length()>0) return s.str().substr(1);
+  else return "";
+}
+
+string list2string(const list<int> &ss) {  
   stringstream s;
   for (auto x : ss) s<<" "<<x;
   if (s.str().length()>0) return s.str().substr(1);

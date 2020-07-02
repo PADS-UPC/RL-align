@@ -29,15 +29,21 @@
 #define _UTIL_H
 
 #include <set>
+#include <map>
 #include <list>
 #include <vector>
 #include <string>
 
 std::set<std::string> difference_set(const std::set<std::string> &big, const std::set<std::string> &small);
 std::set<std::string> union_set(const std::set<std::string> &big, const std::set<std::string> &small);
+std::set<std::string> intersection_set(const std::set<std::string> &big, const std::set<std::string> &small);
+void extend_list(std::list<std::string> &path, const std::set<std::string> &nodes);
+
+std::string first_common_element(const std::list<std::string> &a, const std::list<std::string> &b);
 
 std::string set2string(const std::set<std::string> &ss);
 std::string vector2string(const std::vector<std::string> &ss);
 std::string list2string(const std::list<std::string> &ss);
+std::string list2string(const std::list<int> &ss);
 
 #endif

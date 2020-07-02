@@ -43,7 +43,8 @@
 using namespace std;
 
 const std::string graph::DUMMY = "_DUMMY_";
-const int graph::BFS_LIMIT = 400;
+size_t graph::BFS_LIMIT = 1000; // default
+size_t graph::NUM_SAMPLE_PATHS = 100;
 
 //////////// Class node stores a graph node //////////////7
 
@@ -97,7 +98,7 @@ graph::graph(const string &fname, NetVariant which, bool addIFS, bool addLOOPS) 
     if (which == ORIGINAL) {
       // locate initial and final nodes
       for (auto n : nodes_by_id) {
-	if (get_in_edges(n.first).empty() and n.second.initial_marking) 
+	if (get_in_edges(n.first).empty() or n.second.initial_marking) 
 	  initial_nodes.insert(n.first);
 	if (get_out_edges(n.first).empty())
 	  final_nodes.insert(n.first);
@@ -180,16 +181,16 @@ graph::graph(const string &fname, NetVariant which, bool addIFS, bool addLOOPS) 
       }
       
       // if more than one final node, unify them with the first in the list.
-      TRACE(6,"Final nodes: [" << set2string(final_nodes) << "]");
-      set<string> fn = final_nodes; // copy to avoid iterator break when deleting nodes
-      auto f = fn.begin();
-      string f1 = *f;
-      ++f;
-      while (f != fn.end()) {
-        replace_node(*f, f1);
-        ++f;
-      }
-      TRACE(6,"Unified "<<fn.size()<<" final nodes to ["<< set2string(final_nodes) << "]");
+      //TRACE(6,"Final nodes: [" << set2string(final_nodes) << "]");
+      //set<string> fn = final_nodes; // copy to avoid iterator break when deleting nodes
+      //auto f = fn.begin();
+      //string f1 = *f;
+      //++f;
+      //while (f != fn.end()) {
+      //  replace_node(*f, f1);
+      //  ++f;
+      //}
+      //TRACE(6,"Unified "<<fn.size()<<" final nodes to ["<< set2string(final_nodes) << "]");
     }
 
 }
@@ -288,63 +289,6 @@ void graph::remove_edge(const string &src, const string &targ) {
     remove_from_multimap(out_edges,src,targ);
     remove_from_multimap(in_edges,targ,src);
 }
-
-/// compute distances
-
-void graph::compute_distances() {
-   
-  TRACE(6,"Computing distances");
-  
-  // Initialize the solution matrix with adjacency information
-  distances.clear();
-  for (auto i : nodes_by_id) {
-    for (auto j : nodes_by_id) {
-      if (i.first==j.first)
-        distances[i.first+" "+j.first] = 0;
-      else if (connected(i.first,j.first))
-        distances[i.first+" "+j.first] = 1;
-      else
-        distances[i.first+" "+j.first] = std::numeric_limits<double>::infinity();
-    }
-  }
-  
-  // For each vertice k between i and j, update distances if i-k-j path is shorter
-  for (auto k : nodes_by_id) {
-    // Pick all vertices as source one by one 
-    for (auto i : nodes_by_id) {
-      // Pick all vertices as destination for node i
-      for (auto j : nodes_by_id) {
-        // If vertex k is on the shortest path from i to j, then update the value of dist(i,j)
-        double d = distance(i.first,k.first) + distance(k.first,j.first);
-        if (d < distance(i.first,j.first)) 
-           distances[i.first+" "+j.first] = d; 
-      } 
-    } 
-  }  
-}
-
-/// save distances to given ostream
-
-void graph::save_distances(ostream &sdist) const {
-  for (auto d : distances)
-    sdist << d.first << " " << d.second << endl;
-}
-   
-/// load distances from given file
-
-void graph::load_distances(const string &fname) {
-
-  ifstream sdist;
-  sdist.open(fname);
-  if (sdist.fail()) { ERROR_CRASH("Error opening file '" << fname << "'"); }
-
-  distances.clear();
-  string n1,n2; double d;
-  while (sdist >> n1 >> n2 >> d) 
-    distances[n1+" "+n2] = d;
-  
-  sdist.close();
-}
    
 /// load distances and paths from given file
 
@@ -356,24 +300,33 @@ void graph::load_paths(const string &fname) {
   
   distances.clear();
   paths.clear();
+  parallels.clear();
 
   string line;
   while (getline(sdist,line)) {
     istringstream sin; sin.str(line);
-    string n1,n2; double d;
-    sin >> n1 >> n2 >> d; 
-    distances[n1+" "+n2] = d;
-    if (d >= 0) {
-      list<string> p;
-      string e;
-      while (sin>>e) p.push_back(e);
-      paths[n1+" "+n2] = p;
+    
+    string kind,n1,n2; double d;
+
+    sin >> kind;
+    if (kind=="PATH") {
+      sin >> n1 >> n2 >> d; 
+      distances[n1+" "+n2] = d;
+      if (d >= 0) {
+        list<string> p;
+        string e;
+        while (sin>>e) p.push_back(e);
+        paths[n1+" "+n2] = p;
+      }
+    }
+    else if (kind=="PARALLEL") {
+      sin >> n1 >> n2;
+      parallels[n1] = n2;
     }
   }
+    
   sdist.close();
 }
-   
-
 
 /// check for node existence
 
@@ -440,6 +393,7 @@ list<string> graph::get_nodes_by_name(const string &name) const {
   auto p = nodes_by_name.equal_range(name);
   for (auto i=p.first; i!=p.second; ++i)
      nds.push_back(i->second);
+  nds.sort(); // make sure we get the same order in all executions.
   return nds;
 }
 
@@ -474,6 +428,13 @@ bool graph::is_parallel_join(const std::string &id) const {
           get_in_edges(id).size() > 1);
 }
 
+/// check if a node is a exclusive join
+
+bool graph::is_exclusive_join(const std::string &id) const {
+  return (get_node(id).type == node::PLACE and
+          get_in_edges(id).size() > 1);
+}
+
 /// check if a node is a parallel split
 
 bool graph::is_parallel_split(const std::string &id) const {
@@ -481,120 +442,33 @@ bool graph::is_parallel_split(const std::string &id) const {
           get_out_edges(id).size() > 1);
 }
 
-/// find the parallel split matching given parallel join
+/// check if a node is a exclusive split
 
-string graph::find_matching_split(const string &id) const {
-
-  if (not is_parallel_join(id)) {
-    ERROR_CRASH("find_matching_split called for non-join node " << id);
-  }
-
-  int d = 0;
-  string n = id;
-  bool found = false;
-  while (not found) {
-    if (is_parallel_split(n)) {
-      --d;       // it is a parallel split, reduce depth
-      if (d==0)
-        found = true; // we reached initial depth, it is the searched node
-    }
-    
-    if (is_parallel_join(n)) 
-      // parallel join, increase depth
-      ++d; 
-    
-    else if (is_initial(n)) {
-      WARNING("initial node reached when looking for parallel split");
-      return "";
-    }
-    
-    // if not found, take one more step backward.
-    if (not found) n = *(get_in_edges(n).begin());
-  }
-  
-  return n;
+bool graph::is_exclusive_split(const std::string &id) const {
+  return (get_node(id).type == node::PLACE and
+          get_out_edges(id).size() > 1);
 }
 
+/// store pair split-join for a parallel region
 
-string graph::find_matching_join(const string &split, const string &id, int depth, set<string> &seen) const {
-
-  TRACE(3,"looking for match for "<<split<<" at " << id);
-  
-  if (is_parallel_join(id) and id!=split) { // parallel join, decrease depth
-    --depth;
-    if (depth==0) return id; // we reached initial depth, it is the searched node
-  }
-
-  if (seen.count(id)>0) // this branch is a loop, go back
-    return "";
-      
-  if (is_parallel_split(id)) {     // it is a parallel split, increase depth
-    ++depth;   
-  }  
-  else if (is_final(id)) {
-    WARNING("final node reached when looking for parallel join");
-    return "";
-  }
-  
-  // if not found, take one more step forward
-  seen.insert(id);
-  for (auto e : get_out_edges(id)) {
-    string found = find_matching_join(split, e, depth, seen);
-    if (found!="") return found;
-  }
-  seen.erase(id);
-
-  return "";  
+void graph::set_parallel(const string &split, const string &join) {
+  parallels[split] = join;
 }
 
-/// find the parallel join matching given parallel split
+/// retrieve join node for given parallel split
 
-
-string graph::find_matching_join(const string &id) const {
-
-  if (not is_parallel_split(id)) {
-    ERROR_CRASH("find_matching_join called for non-split node " << id);
-  }
-
-  set<string> seen;
-  return find_matching_join(id, id, 0, seen);
-  
+string graph::get_parallel_join(const string &split) const {
+  auto p = parallels.find(split);
+  if (p != parallels.end()) return p->second;
+  else return "";
 }
-  /*
-string graph::find_matching_join(const string &id) const {
 
-  if (not is_parallel_split(id)) {
-    ERROR_CRASH("find_matching_join called for non-split node " << id);
-  }
+/// get map of parallel pairs to iterate over
 
-  int d = 0;
-  string n = id;
-  bool found = false;
-  while (not found) {
-    TRACE(3,"looking for join for "<<id<<". now at "<<n);
-    if (is_parallel_join(n)) {
-      // parallel join, decrease depth
-      --d;
-      if (d==0)
-        found = true; // we reached initial depth, it is the searched node
-    }
-    
-    if (is_parallel_split(n)) {
-      ++d;       // it is a parallel split, increase depth
-    }
-    
-    else if (is_final(n)) {
-      WARNING("final node reached when looking for parallel join");
-      return "";
-    }
-    
-    // if not found, take one more step forward
-    if (not found) n = *(get_out_edges(n).begin());
-  }
-  
-  return n;
+const map<string,string> & graph::get_parallels() const {
+  return parallels;
 }
-  */
+
   
 /// find out whether there is an edge src -> targ
  
@@ -619,6 +493,37 @@ bool graph::accessible(const string &src, const string &targ) const {
     return false;
   }
 }
+
+/// obtain all nodes in the branch from src to targ. Only works if all
+/// branches leaving src can reach targ (e.g. parallel sections)
+
+void graph::get_branch_nodes(const string &src, const string &targ, list<string> &branch) const {
+
+  list<string> pending;
+  pending.push_back(src);
+  while (not pending.empty()) {
+    TRACE(6,"pending="<<list2string(pending));
+    // get next node
+    string curr = pending.front();
+    pending.pop_front();
+
+    // add current node to the branch
+    // queue its sucessors, unless already in branch (already seen, its a loop) or in pending (already added, its a join)
+    if (curr!=targ) {
+      branch.push_back(curr);
+      TRACE(6,"branch="<<list2string(branch));
+      for (auto x : get_out_edges(curr)) {
+        auto fp = find(pending.begin(), pending.end(), x);
+        auto fb = find(branch.begin(), branch.end(), x);
+        if (fp == pending.end() and fb == branch.end())
+          pending.push_back(x);
+      }
+    }
+  }
+
+  branch.push_back(targ);  
+}
+
 
 /// get possible transitions from a PN configuration
 
@@ -656,7 +561,6 @@ set<string> graph::fire_transition(const set<string> &open, const string &t) con
                    get_out_edges(t));
 }
 
-
 // get minimum distance from any node in 'open' to 'target', or -1 if there is no path
 int graph::shortest_distance(const set<string> &open, const string &target) const {
   int m = std::numeric_limits<int>::max();
@@ -684,6 +588,7 @@ int graph::average_distance(const set<string> &open, const string &target) const
   return int(round(double(s)/m));
 }
 
+search_state::search_state() {}
 search_state::search_state(const set<string> &op, const list<string> &pth, int dist) { open_places = op; path = pth; distance=dist; }
 search_state::~search_state() {}
 
@@ -698,6 +603,89 @@ bool search_state::operator<(const search_state &p) const {
 }
 
 
+/// generate a random path from n (parallel split)  to s (matching join)
+bool graph::random_path(const std::string &n, const std::string &s, std::list<std::string> &path) const {
+
+  path.clear();
+  set<string> open = get_out_edges(n);
+  set<string> ptr = possible_transitions(open);
+  TRACE(6,"Random path from configuration [" << set2string(open) << "] to node " << s);
+  while (not ptr.empty() and ptr.find(s) == ptr.end() and not difference_set(open, get_final_nodes()).empty()) {
+    TRACE(6,"   possible transitions: [" << set2string(ptr) << "]");
+    // select one random transition in ptr to be fired
+    int t = rand() % ptr.size();  
+    string fired;
+    for (auto tr : ptr) {
+      if (t==0) { fired = tr; break; }
+      --t;
+    }
+
+    // fire selected transition
+    TRACE(6,"   firing "<<fired);
+    set<string> newopen = fire_transition(open, fired);
+
+    // add removed places and fired transition to path.
+    for (auto p : difference_set(open,newopen)) path.push_back(p);
+    path.push_back(fired);
+
+    open = newopen;
+    ptr = possible_transitions(open);
+    TRACE(6,"   New configuration [" << set2string(open) << "]");
+  }
+
+  // add target and enabling places to path
+  for (auto p : get_in_edges(s)) path.push_back(p);
+  path.push_back(s);
+  return ptr.find(s) != ptr.end(); 
+}
+
+// find shortest path from open to target by simulating a large number of runs
+
+list<string> graph::find_path_by_sampling(const string &n, const string &target) const {
+
+  list<string> bestp;
+  size_t bestlen = get_num_nodes() * 2; // practical infty
+  for (size_t i=0; i<NUM_SAMPLE_PATHS; ++i) {
+    list<string> p;
+    bool found = random_path(n,target,p);
+    if (found) {
+      TRACE(5,"PATH "<<n<<":"<<target<<"="<<list2string(p));
+      if (p.size() < bestlen) {
+        TRACE(5,"   it is shorter (len="<<p.size()<<").  Keeping");
+        bestp = p;
+        bestlen = p.size();
+      }
+    }
+  }
+  TRACE(2,"Best of "<<NUM_SAMPLE_PATHS<<" samples: (len="<<bestp.size()<<") ["<<list2string(bestp)<<"]");
+  return bestp;
+}
+
+// heurisic for BFS: current path length+underestimation of remaining length.
+// If path lengths not loaded (when called from path computation), then h=-1 for all states (best-first search)
+// If path lengths are loaded (when called from aligner), h>=0 (A* search)
+
+int graph::estimated_cost(const search_state & st, const string &target) const {
+  int g = st.path.size();  // cost so far
+  int h = shortest_distance(st.open_places,target);  // heuristic cost estimation
+  TRACE(4, "           heuristics is g+h = " << g << " + " << h)
+
+  if (h<0) return -1;  // no path from here, add negative cost so it is discarded when (or if) selected
+  else return g + h;   // A* cost function f = g + h
+}
+
+// next search state, resulting from firing transition t from given state st
+
+search_state graph::next_search_state(const search_state & st, const string & t) const {
+  search_state ns;
+  ns.distance = -1; // unknown
+  ns.open_places = fire_transition(st.open_places, t);
+  ns.path = st.path;
+  extend_list(ns.path, get_in_edges(t)); // add places enabling this transition to the path.
+  ns.path.push_back(t);                 // and add the transition itself
+  return ns;
+}
+
 // Perform BFS on petri net to find a path from current configuration ("open") to given transition (target)
 bool graph::find_path(const set<string> &open, const string &target, list<string> &path) const {
 
@@ -707,7 +695,7 @@ bool graph::find_path(const set<string> &open, const string &target, list<string
   set<set<string>> seen;
   pending.insert(search_state(open,list<string>(),shortest_distance(open,target)));
   //pending.insert(search_state(open,list<string>(),average_distance(open,target)));
-  int explored = 0;
+  size_t explored = 0;
   while (not pending.empty()) {
 
     search_state current = *pending.begin(); // get current state to explore
@@ -719,62 +707,55 @@ bool graph::find_path(const set<string> &open, const string &target, list<string
     set<string> ptr = possible_transitions(current.open_places, target);
     TRACE(3,"   possible transitions: [" << set2string(ptr) << "]");
 
-    if (current.open_places.find(target)!=current.open_places.end() or  // the target is a place and we reached it
-        ptr.find(target) != ptr.end()) {                                // or the target is an enabled transition
-
+    if (current.open_places.count(target)>0) {
+      // the target is a place and we reached it. Goal achieved return result
       path = current.path;
+      path.push_back(target);
       TRACE(3,"   Path found: [" << list2string(path) << "]");
       return true;
     }
 
+    if (ptr.count(target)>0) {
+      // the target is a transition and it is enabled.
+      // Goal reached. Add missing elements to path and return result
+      path = current.path;
+      extend_list(path, get_in_edges(target));
+      path.push_back(target);
+      TRACE(3,"   Path found: [" << list2string(path) << "]");
+      return true;
+    }
     
     ++explored;
-    if (explored>BFS_LIMIT and pending.size()>BFS_LIMIT) {
-      // the alignment is probably wrong and there is no way to fix it,
-      // or maybe the model is too big or complex to be worth solving it via A*
-      TRACE(3,"   BFS Exploration is taking too long, giving up");
+    if (BFS_LIMIT>0 and explored>BFS_LIMIT and pending.size()>BFS_LIMIT) {
+      // the model is too big or complex to be worth solving it via A*
+      TRACE(1,"BFS Exploration is taking too long, giving up. You may trying using a larger value for BFS_LIMIT.");
       return false;
     }
     
     if (current.distance < 0) {
       // if there is no conection from this configuration to target, do not expand it
       TRACE(3,"   No connection to target from here. Abandoning branch");
+      continue;
     }
-    else {
-      TRACE(3,"   Adding successor configurations to pending list");
-      for (auto t : ptr) {
-        // fire each transition and add resulting configuration for further exploration
-        set<string> nextopen = fire_transition(current.open_places, t);
-        TRACE(4,"      - possible sucessor firing " << t << ": " << set2string(nextopen));
 
-        if (seen.find(nextopen) == seen.end()) {
-          // if unseen configuration, expand.
-          // extend partial path with fired transition and store pair (configuration, path) for BFS
-          list<string> nextpath = current.path;
-          nextpath.push_back(t);
-          // heurisic for BFS: current path length+underestimation of remaining length.
-          // (this BFS is actually an A*)
-          // If this is too slow, try removing the first part of the sum and do a simple BFS.
-          // Results will have higer cost, but search may be faster
-	  int h = shortest_distance(nextopen,target);   // heuristic cost estimation
-	  //int h = average_distance(nextopen,target);   // heuristic cost estimation
-	  int g = nextpath.size();
-	  int f; // A* cost function f = g + h
-	  if (h<0) 
-	    f = -1;   // no path from here, add negative cost so it is discarded when (or if) selected
-	  else 
-	    f = g + h;
-	  
-	  pending.insert(search_state(nextopen, nextpath, f));
-	  TRACE(4,"        Adding "<< f << "("<<g<<"+"<<h<<")/" << list2string(nextpath) << "/" << set2string(nextopen));
-	  TRACE(4,"        Pending size =" << pending.size());	  
-        }
-        else {
-          // if configuration is already visited, skip
-          TRACE(3,"   Skipping seen configuration [" << set2string(nextopen) << "]");
-        }
+    // new successors exist, add them to pending 
+    TRACE(3,"   Adding successor configurations to pending list");
+    for (auto t : ptr) {
+      // fire each transition and add resulting configuration for further exploration
+      search_state nextstate = next_search_state(current, t);
+      TRACE(4,"      - possible sucessor firing " << t << ": " << set2string(nextstate.open_places));
+      
+      if (seen.find(nextstate.open_places) != seen.end()) { // if configuration is already visited, skip
+        TRACE(3,"   Skipping seen configuration [" << set2string(nextstate.open_places) << "]");
+        continue;
       }
-    }
+            
+      // add new state to pending list, with corresponding cost estimation
+      nextstate.distance = estimated_cost(nextstate,target); 
+      pending.insert(nextstate);
+      TRACE(4,"        Adding search state. Cost = "<< nextstate.distance << " path=[" << list2string(nextstate.path) << "]  open={" << set2string(nextstate.open_places)<<"}");
+      TRACE(4,"        Pending size =" << pending.size());	  
+    }    
     
     TRACE(3,"   Pending contains now "<< pending.size() << " configurations");
   }

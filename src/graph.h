@@ -18,6 +18,7 @@ class search_state {
      std::set<std::string> open_places;
      std::list<std::string> path;
      int distance;
+     search_state();
      search_state(const std::set<std::string> &op, const std::list<std::string> &pth, int dist);
      ~search_state();
      bool operator<(const search_state &p) const;
@@ -62,6 +63,8 @@ class graph {
      std::map<std::string,double> distances;
      // shortest paths between nodes. Distance==-1 means no path.
      std::map<std::string,std::list<std::string>> paths;
+     // matching parallel joins for each parallel split
+     std::map<std::string,std::string> parallels;
      
      // auxiliary: check for already existing nodes
      std::map<std::string,node>::const_iterator check_node(const std::string &id) const;
@@ -75,13 +78,12 @@ class graph {
      static void remove_from_multimap(std::multimap<std::string,std::string> &mmap, const std::string &key, const std::string &val);
      /// utility: find out if there is a loop involving given node, or any accessible from it.
      bool has_loops(const std::string &node, std::set<std::string> &seen) const;
-
-     std::string find_matching_join(const std::string &split, const std::string &id, int depth, std::set<std::string> &seen) const;
-     
+    
    public:
      // dummy label
      static const std::string DUMMY;
-     static const int BFS_LIMIT;
+     static size_t BFS_LIMIT;
+     static size_t NUM_SAMPLE_PATHS;
 
      graph();
      graph(const std::string &fname, NetVariant which, bool addIFS=false, bool addLOOPS=false);
@@ -111,12 +113,17 @@ class graph {
      std::set<std::string> get_out_edges(const std::string &id) const;
      std::set<std::string> get_in_edges(const std::string &id) const;
      bool is_parallel_join(const std::string &id) const;
+     bool is_exclusive_join(const std::string &id) const;
      bool is_parallel_split(const std::string &id) const;
-     std::string find_matching_split(const std::string &id) const;
-     std::string find_matching_join(const std::string &id) const;
+     bool is_exclusive_split(const std::string &id) const;
+     void set_parallel(const std::string &split, const std::string &join);
+     std::string get_parallel_join(const std::string &split) const;
+     const std::map<std::string,std::string> & get_parallels() const;
      bool connected(const std::string &src, const std::string &targ) const;
      bool accessible(const std::string &src, const std::string &targ) const;
      bool path_exists(const std::string &src, const std::string &targ) const;
+     void get_branch_nodes(const std::string &src, const std::string &targ, std::list<std::string> &branch) const;
+
      double distance(const std::string &id1, const std::string &id2) const;
      int shortest_distance(const std::set<std::string> &open, const std::string &target) const;
      int average_distance(const std::set<std::string> &open, const std::string &target) const;
@@ -131,13 +138,17 @@ class graph {
 
      std::set<align_elem> possible_moves(const std::set<std::string> &open, const std::string &event) const;
      std::set<std::string> simulate_move(const std::set<std::string> &open, const align_elem &m) const;
-
+ 
      std::set<std::string> possible_transitions(const std::set<std::string> &open, std::string target="") const;
      bool is_final(const std::set<std::string> &open) const;     /// see if a PN configuration is final
      std::set<std::string> fire_transition(const std::set<std::string> &open, const std::string &t) const;
+     int estimated_cost(const search_state & st, const std::string &target) const;
+     search_state next_search_state(const search_state & current, const std::string & t) const;
      bool find_path(const std::set<std::string> &open, const std::string &target, std::list<std::string> &path) const;
-
+     bool random_path(const std::string &n, const std::string &s, std::list<std::string> &path) const;
+     std::list<std::string> find_path_by_sampling(const std::string &n, const std::string &target) const;
      std::string dump() const;
+
 };
 
 #endif

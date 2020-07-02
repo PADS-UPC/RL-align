@@ -1,7 +1,7 @@
 
 FLAGS=-DVERBOSE -Wall -O3 -std=c++11
 
-all:  align dump paths ComputeBP.class 
+all:  align dump paths compute-bps
 
 libbpm.a : graph.o bp.o alignment.o config.o traces.o relax.o util.o pugixml.o 
 	ar -rs libbpm.a graph.o bp.o alignment.o config.o traces.o relax.o util.o pugixml.o
@@ -38,14 +38,13 @@ paths : paths.cc libbpm.a
 	g++ -o paths paths.cc -lbpm $(FLAGS) -L.
 	cp paths ../bin
 
+compute-bps : compute-bps.cc libbpm.a
+	g++ -o compute-bps compute-bps.cc -lbpm $(FLAGS) -L.
+	cp compute-bps ../bin
+
 dump : dump.cc libbpm.a
 	g++ -o dump dump.cc -lbpm $(FLAGS) -L.
 	cp dump ../bin
 
-ComputeBP.class : ComputeBP.java
-	javac -cp ../jbpt/jbpt-bp-0.3.1.jar:../jbpt/jbpt-core-0.3.1.jar:../jbpt/jbpt-petri-0.3.1.jar ComputeBP.java
-	cp ComputeBP.class ../bin
-
 clean:
-	rm -f align paths dump *.o *.a *.class
-	rm -f ../bin/align ../bin/paths ../bin/dump ../bin/*.class
+	rm -f align paths compute-bps dump *.o *.a

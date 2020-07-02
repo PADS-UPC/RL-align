@@ -1,24 +1,52 @@
 #! /bin/bash
 
+# Creates unfoldings, paths, and behavioral profiles needed by relaxation labeling aligner
+#
+#  Usage :  ./prepare-data.sh  2> err.log
+#
+#    (we recommend to redirect stderr since punf is a bit verbose)
+
+
 BINDIR=`dirname $0`
-DATADIR=`dirname $BINDIR`/data
-JBPT=`dirname $BINDIR`/jbpt
-export CLASSPATH=$BINDIR:$JBPT/jbpt-bp-0.3.1.jar:$JBPT/jbpt-core-0.3.1.jar:$JBPT/jbpt-petri-0.3.1.jar
+ROOTDIR=`dirname $BINDIR`
 
-####### Compute BPs #####
-for x in $DATADIR/unfoldings/*.bp.pnml; do    
-    name=`basename $x .bp.pnml`
-    echo "Computing BPs for $name" >&2
-    $BINDIR/dump $x unfolding true true | java ComputeBP > $DATADIR/unfoldings/$name.tt.bp &
-    $BINDIR/dump $x unfolding true false | java ComputeBP > $DATADIR/unfoldings/$name.tf.bp &
+ALLMODELS="$ROOTDIR/data/originals/*/*.pnml"
+
+### Launch processes to extract unfoldings for all models
+mkdir -p $ROOTDIR/data/unfoldings
+rm -f $ROOTDIR/data/unfoldings/*
+for MODEL in $ALLMODELS; do
+    echo "PROCESSING UNFOLDING FOR $MODEL"
+    name=`basename $MODEL .pnml`
+    $BINDIR/punf -f=$MODEL -m=$ROOTDIR/data/unfoldings/$name.bp.pnml &
 done
-wait
+wait     # wait for unfoldings to end, since they are needed below
+sleep 1
 
-####### Compute paths and distances #####
-
-for x in $DATADIR/unfoldings/*.bp.pnml; do    
-    name=`basename $x .bp.pnml`
-    echo "Computing paths for $name" >&2
-    $BINDIR/paths $x unfolding true true > $DATADIR/unfoldings/$name.tt.path &
+# Fix weird task names in some models
+for m in $ROOTDIR/data/unfoldings/*.bp.pnml; do
+    cat $m | sed 's/+complete//g' > $m.tmp
+    mv $m.tmp $m
 done
-wait
+
+ALLUNFOLDINGS="$ROOTDIR/data/unfoldings/*.bp.pnml"
+
+### Launch processes to compute shortest paths for all unfoldings (normal and reconnected)
+for MODEL in $ALLUNFOLDINGS; do
+    echo "PROCESSING PATHS FOR $MODEL"
+    name=`basename $MODEL .bp.pnml`
+    $BINDIR/paths $MODEL unfolding true true > $ROOTDIR/data/unfoldings/$name.tt.path &    
+    $BINDIR/paths $MODEL unfolding true false > $ROOTDIR/data/unfoldings/$name.tf.path &
+done
+wait     # wait for paths to end, since they are needed below
+sleep 1
+
+### Launch processes to compute behavioral profiles for all unfoldings (normal and reconnected)
+for MODEL in $ALLUNFOLDINGS; do
+    echo "PROCESSING BPs FOR $MODEL"
+    name=`basename $MODEL .bp.pnml`
+    $BINDIR/compute-bps $MODEL unfolding true true > $ROOTDIR/data/unfoldings/$name.tt.bp &
+    $BINDIR/compute-bps $MODEL unfolding true false > $ROOTDIR/data/unfoldings/$name.tf.bp &
+done
+wait   # wait for everything to end before closing
+

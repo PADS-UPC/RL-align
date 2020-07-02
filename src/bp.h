@@ -48,18 +48,18 @@ class behavioral_profile {
    void remove_relation(const std::string &node1, const std::string &node2);
    // get existing relation between two nodes
    relType get_relation(const std::string &n1, const std::string &n2) const;
+   // convert from relation internal code to printable symbol
+   static std::string get_rel_name(relType rt, bool table=false);
    // return BP as a string, for tracing. Two possible formats: table or list
-   std::string dump(bool table=true) const;
+   std::string dump(bool table=false) const;
+   // obtain the inverse relation of r
+   static relType inverse(relType r);
    
  private:
    std::map<std::pair<std::string,std::string>, relType> relations;
 
    // convert from relation symbol to internal code
    static relType get_rel_type(const std::string &relname);
-   // convert from relation internal code to printable symbol
-   static std::string get_rel_name(relType rt);
-   // obtain the inverse relation of r
-   static relType inverse(relType r);
    
 };
 

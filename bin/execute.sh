@@ -16,10 +16,9 @@ OUTNAME=`basename $CONFIG | cut -d'.' -f2-6`
 rm -rf $DATADIR/results/output.$OUTNAME
 mkdir -p $DATADIR/results/output.$OUTNAME
 
+# launch processes to align all models
 for x in $MODELS; do
     name=`basename $x .bp.pnml`
     echo "Aligning $name" >&2
-    $BINDIR/align $DATADIR/unfoldings/$name $DATADIR/logs/$name.xes $CONFIG | sort > $DATADIR/results/output.$OUTNAME/$name.out &
+    $BINDIR/align $DATADIR/unfoldings/$name $DATADIR/logs/$name.xes $CONFIG  > $DATADIR/results/output.$OUTNAME/$name.out 
 done
-
-wait

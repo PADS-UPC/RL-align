@@ -229,9 +229,9 @@ void add_constraints(problem & prob,
 /// add fill it using event, alignment, and BP information
 
 problem create_labeling_problem(const vector<string> &trace,
-                                          const graph& g,
-                                          const behavioral_profile &bp,
-                                          const behavioral_profile &bptf) {
+                                const graph& g,
+                                const behavioral_profile &bp,
+                                const behavioral_profile &bptf) {
 
   // each trace event is a variable in our alignment problem
   problem prob(trace.size());
@@ -384,13 +384,13 @@ int main(int argc, char *argv[]) {
   string fbp = basename+".tf.bp";
   TRACE(1, "Loading BPs..."<<fbp);
   behavioral_profile bptf(fbp);
-  TRACE(7, "BP loaded is: " << bptf.dump() );
+  TRACE(7, "BP loaded is: " << bptf.dump(true) );
 
   // bp is BP defined by config file (tf: w/o loops, tt: w/ loops)
   fbp = basename+".tt.bp";
   TRACE(1, "Loading BPs..."<<fbp);
   behavioral_profile bp(fbp);
-  TRACE(7, "BP loaded is: " << bp.dump());
+  TRACE(7, "BP loaded is: " << bp.dump(true));
 
   TRACE(1, "Loading trace file " << ftrace);
   map<vector<string>,vector<string>> log = load_traces(ftrace,g);  // load traces
@@ -433,8 +433,9 @@ int main(int argc, char *argv[]) {
 
       // p->type is [L/M]. Find a path to p current PN state (maybe empty if p can already be fired)
       list<string> mreal;
-      if (g.find_path(open, p->id, mreal)) {        
+      if (g.find_path(open, p->id, mreal)) {
         // there is a path that can fill the gap:  Fill the gap with the shortest path
+        mreal.pop_back(); // Last element is p->id, remove it
         for (auto m : mreal) {
           if (g.get_node(m).type == node::TRANSITION) {
             seq.insert(p, align_elem(m, g.get_node(m).name, "[M-REAL]"));
@@ -448,8 +449,21 @@ int main(int argc, char *argv[]) {
       }
 
       // p->type is [L/M], and there is no possible set of model moves that will fix this.
-      // Try removing p, and cross fingers.
-      p->type = "[L]";
+      // Try removing p, to find a path to element after p
+      if (p->type == "[L/M]") {
+        TRACE(3,"No path found to fill the gap. Removing next event "<<p->name<<" ("<<p->id<<")");
+        p->type = "[L]";
+        ++p;
+      }
+      else if (p->type == "[ANCHOR]") {
+        TRACE(3,"No path found to final state "<<p->id<<". Removing anchor.");
+        p = seq.erase(p);
+      }
+      else {
+        // should not happen
+        ERROR_CRASH("Unexpected element "<<p->dump(true)<<" in gap filling process");
+      }
+
     }
 
     
@@ -526,7 +540,7 @@ int main(int argc, char *argv[]) {
       --------------- END OF OLD COMPLETION PROPOSAL -------------*/
           
     seq.pop_front(); // remove initial node anchor.
-    seq.pop_back(); // remove final node anchor.
+    while (seq.back().type=="[ANCHOR]") seq.pop_back(); // remove final node anchor(s).
 
     TRACE(1, "Final alignment ");
     TRACE(3, "Final alignment: "<< seq.dump());
