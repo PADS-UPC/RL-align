@@ -84,7 +84,7 @@ E.g., to align one model with its corresponding log:
 ```
    bin/execute.sh config/config.15.5.-100.-150.-300.cfg data/unfoldings/M1.bp.pnml
 ```
-You can also align several models in parallel (quotes are important if you do this):
+You can also align several models (quotes are important if you do this):
 ```
    bin/execute.sh config/config.15.5.-100.-150.-300.cfg "data/unfoldings/M1.bp.pnml data/unfoldings/ML3.bp.pnml data/unfoldings/BPIC2017.bp.pnml"
 ```
@@ -98,7 +98,6 @@ For each aligned model, a file will be created containing all aligned traces.
 
 There are two scripts you can use to evaluate the alignments:
    * The script ``eval-relax.sh`` will evaluate results of relaxation labelling aligner
-   * The script ``eval-prom.sh`` will evaluate results of aligners in ProM environment, when saved as CSV.
 
 E.g.
 ```
@@ -108,6 +107,8 @@ You can also compute aggregated results (i.e. to compute microaverage costs and 
 ```
    cat results/output.15.5.-100.-150.-300/M[0-9]*.out | bin/eval-relax.sh
 ```
+
+   * The script ``eval-prom.sh`` will evaluate results of aligners in ProM environment, when saved as CSV.
 
 E.g.:
 ```
