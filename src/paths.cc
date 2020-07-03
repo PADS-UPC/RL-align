@@ -213,18 +213,24 @@ void floyd(const graph &g, map<string,list<string>> &paths, const map<string,str
   list<string> nodes = g.get_nodes_by_id();  
   for (auto k : nodes) {
     for (auto i : nodes) {
+      // find path from i to k. If no path from i to k, skip
+      auto pik = paths.find(i+":::"+k);
+      if (pik == paths.end()) continue;
+
       for (auto j : nodes) {
+        // find path from k to j. If no path from k to j, skip
+        auto pkj = paths.find(k+":::"+j);
+        if (pkj == paths.end()) continue;
+
         // if i-j is a complete parallel block, do not update cost. (this is the only adaptation needed)
         auto par = parallels.find(i);
         if (par!=parallels.end() and par->second==j) continue;
-
-        // find current path from i to j
-        auto pij = paths.find(i+":::"+j);
-        // find paths from i to k, and from k to j
-        auto pik = paths.find(i+":::"+k);
-        auto pkj = paths.find(k+":::"+j);
-        // if pik and pij exist and are better than pij, replace path
-        if (pik != paths.end() and pkj != paths.end() and valid_path(i,pik,pkj,parallels,paths)) {
+        
+        // pik and pkj exist.  Check whether the composed path pik+pkj is valid
+        if (valid_path(i,pik,pkj,parallels,paths)) {
+          // find current path from i to j
+          auto pij = paths.find(i+":::"+j);
+          // if path pik+pkj is better than pij, update path
           if (pij == paths.end() or pij->second.size() > pik->second.size()+pkj->second.size()) {
             list<string> p;
             p.insert(p.end(), pik->second.begin(), pik->second.end());
