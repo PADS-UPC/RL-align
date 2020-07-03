@@ -12,6 +12,8 @@ ROOTDIR=`dirname $BINDIR`
 
 ALLMODELS="$ROOTDIR/data/originals/*/*.pnml"
 
+rm -f prepare-data.times
+
 ### Launch processes to extract unfoldings for all models
 mkdir -p $ROOTDIR/data/unfoldings
 rm -f $ROOTDIR/data/unfoldings/*
@@ -31,22 +33,31 @@ done
 
 ALLUNFOLDINGS="$ROOTDIR/data/unfoldings/*.bp.pnml"
 
-### Launch processes to compute shortest paths for all unfoldings (normal and reconnected)
 for MODEL in $ALLUNFOLDINGS; do
-    echo "PROCESSING PATHS FOR $MODEL"
+    echo "PROCESSING $MODEL"
     name=`basename $MODEL .bp.pnml`
-    $BINDIR/paths $MODEL unfolding true true > $ROOTDIR/data/unfoldings/$name.tt.path &    
-    $BINDIR/paths $MODEL unfolding true false > $ROOTDIR/data/unfoldings/$name.tf.path &
-done
-wait     # wait for paths to end, since they are needed below
-sleep 1
 
-### Launch processes to compute behavioral profiles for all unfoldings (normal and reconnected)
-for MODEL in $ALLUNFOLDINGS; do
-    echo "PROCESSING BPs FOR $MODEL"
-    name=`basename $MODEL .bp.pnml`
-    $BINDIR/compute-bps $MODEL unfolding true true > $ROOTDIR/data/unfoldings/$name.tt.bp &
-    $BINDIR/compute-bps $MODEL unfolding true false > $ROOTDIR/data/unfoldings/$name.tf.bp &
+    ### compute shortest paths for both unfoldings (normal and reconnected)
+    echo "      PATHS"
+    /usr/bin/time -f '%U' -o $name.path1 $BINDIR/paths $MODEL unfolding true true > $ROOTDIR/data/unfoldings/$name.tt.path &    
+    /usr/bin/time -f '%U' -o $name.path2 $BINDIR/paths $MODEL unfolding true false > $ROOTDIR/data/unfoldings/$name.tf.path &
+
+    wait     # wait for paths to end, since they are needed by BPs below
+    sleep 1
+
+    ### compute behavioural profiles for both unfoldings (normal and reconnected)
+    echo "      BPs"
+    /usr/bin/time -f '%U' -o $name.bp1 $BINDIR/compute-bps $MODEL unfolding true true > $ROOTDIR/data/unfoldings/$name.tt.bp &
+    /usr/bin/time -f '%U' -o $name.bp2 $BINDIR/compute-bps $MODEL unfolding true false > $ROOTDIR/data/unfoldings/$name.tf.bp &
+
+    wait     # wait for paths to end, since they are needed by BPs below
+    sleep 1
+
+    rm -f $name.time
+    cat $name.path1 $name.path2 | awk '{s+=$1} END {print "PATHS",s}' >> $name.time
+    cat $name.bp1 $name.bp2 | awk '{s+=$1} END {print "BPS",s}' >> $name.time
+    echo $name | cat - $name.time | awk 'NR>1 {printf(" ");} {printf("%s",$0);} END {printf("\n");}' >> prepare-data.times
+    rm $name.path[12] $name.bp[12] $name.time
 done
-wait   # wait for everything to end before closing
+
 
