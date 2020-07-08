@@ -1,7 +1,7 @@
 
 FLAGS=-DVERBOSE -Wall -O3 -std=c++11
 
-all:  align dump paths compute-bps
+all:  align dump paths accessibility compute-bps
 
 libbpm.a : graph.o bp.o alignment.o config.o traces.o relax.o util.o pugixml.o 
 	ar -rs libbpm.a graph.o bp.o alignment.o config.o traces.o relax.o util.o pugixml.o
@@ -38,6 +38,10 @@ paths : paths.cc libbpm.a
 	g++ -o paths paths.cc -lbpm $(FLAGS) -L.
 	cp paths ../bin
 
+accessibility : accessibility.cc libbpm.a
+	g++ -o accessibility accessibility.cc -lbpm $(FLAGS) -L.
+	cp accessibility ../bin
+
 compute-bps : compute-bps.cc libbpm.a
 	g++ -o compute-bps compute-bps.cc -lbpm $(FLAGS) -L.
 	cp compute-bps ../bin
@@ -47,4 +51,4 @@ dump : dump.cc libbpm.a
 	cp dump ../bin
 
 clean:
-	rm -f align paths compute-bps dump *.o *.a
+	rm -f align dump paths accessibility compute-bps *.o *.a

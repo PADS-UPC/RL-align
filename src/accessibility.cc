@@ -33,42 +33,11 @@
 #include "config.h"
 #include "traces.h"
 #include "util.h"
-#define MOD_TRACENAME "PATHS"
+#define MOD_TRACENAME "ACCESSIBLE"
 #define MOD_TRACECODE MAIN_TRACE
 
 using namespace std;
 
-
-// check if the path pik+pkj includes a parallel section. If it does, it must be complete.
-
-bool valid_path(const string &i, map<string,list<string>>::iterator pik, map<string,list<string>>::iterator pkj, const map<string,string> &parallels, const map<string,list<string>> &paths) {
-
-  list<string> s;
-  s.push_back(i);
-  s.insert(s.end(), pik->second.begin(), pik->second.end());
-  s.insert(s.end(), pkj->second.begin(), pkj->second.end());
-
-  bool ok = true;
-  for (auto e = s.begin(); e!=s.end() and ok; ++e) {
-    auto p = parallels.find(*e);
-    if (p != parallels.end()) {
-      string split = p->first;
-      string join = p->second;
-      size_t n = 0;
-      auto f = e;
-      while (f!=s.end() and *f!=join) {
-        ++f;
-        ++n;
-      }
-      
-      // parallel limits where there, but middle was not complete, do not use this path.
-      if (f!=s.end() and n < paths.find(split+":::"+join)->second.size()) 
-           return false;
-    }
-  }
-  
-  return true;
-}
 
 /// recursive auxiliary for find_matching_join, doing the actual work
 
@@ -135,7 +104,7 @@ string find_matching_join(const graph &g, const string &split) {
 //////////////////////////////////////////////////////
 /// init matrix for Floyd
 
-void init_path_matrix(graph &g, map<string,list<string>> &paths, map<string,string> &parallels) {
+void init_path_matrix(graph &g, set<string> &paths, map<string,string> &parallels) {
 
   TRACE(1,"Init matrix");
   list<string> nodes = g.get_nodes_by_id();  
@@ -144,40 +113,21 @@ void init_path_matrix(graph &g, map<string,list<string>> &paths, map<string,stri
     // init path matrix with direct edges
     set<string> succ = g.get_out_edges(n);
     for (auto s : succ) {
-      list<string> p;
-      p.push_back(s);
-      paths[n+":::"+s] = p;
+      paths.insert(n+":::"+s);
     }
 
-    // node to self, cost zero
+    // node to self, 
     list<string> p;
-    paths[n+":::"+n] = p;
+    paths.insert(n+":::"+n);
 
-    // for parallel splits, compute path to matching parallel join
+    // for parallel splits, compute matching parallel join
     if (g.is_parallel_split(n)) { 
       TRACE(2," is parallel split "<<n);
       string s = find_matching_join(g, n);
       if (s=="") { ERROR_CRASH("Couldn't find matching join for "<<n); }
       TRACE(2," found join at "<<s);
 
-      list<string> p;
-      // use A* to find shortest path to matching join
-      g.BFS_LIMIT = 2000;
-      bool found = g.find_path(g.get_out_edges(n), s, p);
-      if (not found) {
-        WARNING("Path not found from "<<n<<" to "<<s<<". Using simulation");
-
-        // taking too long for A*, sample a number of random paths to matching join and select shortest.
-        g.NUM_SAMPLE_PATHS = 200;
-        p = g.find_path_by_sampling(n,s);
-        if (p.empty()) {
-          ERROR_CRASH("Simulation could not find a path from "<<n<<" to "<<s);
-        }
-      }
-
-      TRACE(2,"PATH "<<n<<":"<<s<<"="<<list2string(p));
-
-      paths[n+":::"+s] = p;
+      paths.insert(n+":::"+s);
       parallels[n] = s;
     }
   }
@@ -186,7 +136,7 @@ void init_path_matrix(graph &g, map<string,list<string>> &paths, map<string,stri
 //////////////////////////////////////////////////////
 /// compute all distances using Floyd variant.
 
-void floyd(const graph &g, map<string,list<string>> &paths, const map<string,string> &parallels) {
+void floyd(const graph &g, set<string> &paths, const map<string,string> &parallels) {
   TRACE(1,"Begin Floyd");
   // adapted floyd algorithm
   list<string> nodes = g.get_nodes_by_id();  
@@ -197,33 +147,21 @@ void floyd(const graph &g, map<string,list<string>> &paths, const map<string,str
       if (pik == paths.end()) continue;
 
       for (auto j : nodes) {
+        if (paths.find(i+":::"+j)!=paths.end()) continue;  // already accessible, skip
+        
         // find path from k to j. If no path from k to j, skip
         auto pkj = paths.find(k+":::"+j);
         if (pkj == paths.end()) continue;
 
-        // if i-j is a complete parallel block, do not update cost. (this is the only adaptation needed)
-        auto par = parallels.find(i);
-        if (par!=parallels.end() and par->second==j) continue;
-        
-        // pik and pkj exist.  Check whether the composed path pik+pkj is valid
-        if (valid_path(i,pik,pkj,parallels,paths)) {
-          // find current path from i to j
-          auto pij = paths.find(i+":::"+j);
-          // if path pik+pkj is better than pij, update path
-          if (pij == paths.end() or pij->second.size() > pik->second.size()+pkj->second.size()) {
-            list<string> p;
-            p.insert(p.end(), pik->second.begin(), pik->second.end());
-            p.insert(p.end(), pkj->second.begin(), pkj->second.end());
-            paths[i+":::"+j] = p;
-          }
-        }
+        // pik and pkj exist, thus pij too
+        paths.insert(i+":::"+j);
       }
     }
   }
   TRACE(1,"End Floyd");
 }
 
-void fix_self_paths(const graph &g, map<string,list<string>> &paths, const map<string,string> &parallels) {
+void fix_self_paths(const graph &g, set<string> &paths, const map<string,string> &parallels) {
 
   list<string> nodes = g.get_nodes_by_id();  
   for (auto i : nodes) {
@@ -233,61 +171,35 @@ void fix_self_paths(const graph &g, map<string,list<string>> &paths, const map<s
       // and then going from the join to the split again
       string s = parallels.find(i)->second;
       auto psi= paths.find(s+":::"+i);
-      if (psi!=paths.end()) {
-        list<string> p;
-        auto pis = paths.find(i+":::"+s);
-        p.insert(p.end(), pis->second.begin(), pis->second.end());
-        p.insert(p.end(), psi->second.begin(), psi->second.end());
-        paths[i+":::"+i] = p;
+      if (psi!=paths.end()) 
         found = true;
-      }
     }
     else {
       // not a parallel split. The best path to i->i is the best path from any successor of i
       set<string> succ = g.get_out_edges(i);
-      size_t min = g.get_num_nodes()*2;
-      string best;
       for (auto s : succ) {
         auto psi = paths.find(s+":::"+i);
-        if (psi!=paths.end() and psi->second.size()<min) {
-          min = psi->second.size();
-          best = s;
+        if (psi != paths.end()) {
+          found = true;
+          break;
         }
-      }
-      if (best!="") {
-        list<string> p = paths.find(best+":::"+i)->second;
-        p.push_front(best);
-        paths[i+":::"+i] = p;
-        found = true;
       }
     }
     if (not found) paths.erase(i+":::"+i);
   }
 }
 
+
 //////////////////////////////////////////////////////                            
 /// print resulting path matrix                                                   
 
-void output_path_matrix(ostream &sout, const graph &g, const map<string,list<string>> &paths) {
+void output_path_matrix(ostream &sout, const graph &g, const set<string> &paths) {
 
   list<string> nodes = g.get_nodes_by_id();
   for (auto i : nodes) {
     for (auto j : nodes) {
-      int nn=0;
-      string s = "";
-      auto pij = paths.find(i+":::"+j);
-      if (pij != paths.end()) {
-        for (auto p : pij->second) {
-            s +=  " " + p;
-            ++nn;
-        }
-        // remove last node in the sequence (just a repetition of targ)           
-
-        auto k = s.rfind(" "+j);
-        s = s.substr(0,k);
-      }
-
-      sout << "PATH " << i << " " << j << " " << nn-1 << s << endl;
+      int s = (paths.find(i+":::"+j) != paths.end() ? 1 : -1);
+      sout << "PATH " << i << " " << j << " " << s << endl;
     }
   }
 }
@@ -322,7 +234,7 @@ int main(int argc, char *argv[]) {
     g.add_node(node(node::TRANSITION, graph::DUMMY, graph::DUMMY));  // add "dummy" node
   
   // Init cost matrix
-  map<string,list<string>> paths;
+  set<string> paths;
   map<string,string> parallels;
   init_path_matrix(g, paths, parallels);
 
