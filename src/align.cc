@@ -85,13 +85,13 @@ double distance_balance(int ev1, int lb1, int ev2, int lb2, const graph& g, cons
   string lname1 = prob.get_label_name(ev1,lb1);
   string lname2 = prob.get_label_name(ev2,lb2);                       
 
-  double dg = g.distance(lname1, lname2)+1;
-
+  double dg = g.distance(lname1, lname2); 
+   
   double dt = abs(ev1-ev2);  // distance in the trace
 
   TRACE(4, "  distance_balance "<<lname1<<" "<<lname2<<" dg="<<dg<<" dt="<<dt);
 
-  return abs(dt-dg)+1;
+  return abs(dt-dg) + 1;  // add one to avoid zeros.
 }
 
 ///////////////////////////////////////////////////////
@@ -198,17 +198,17 @@ void add_constraints(problem & prob,
 
             double dLR = -1;
             if (bptf.get_relation(tL,tR)==behavioral_profile::INTERLEAVED) dLR = 0;
-            else if (g.path_exists(tL,tR)) dLR = g.path(tL,tR).size()/2.0;
+            else if (g.path_exists(tL,tR)) dLR = g.distance(tL,tR);
             //else dLR = g.get_num_nodes()*2;
 
             double dLe = -1;
             if (bptf.get_relation(tL,te)==behavioral_profile::INTERLEAVED) dLe = 0;
-            else if (g.path_exists(tL,te)) dLe = g.path(tL,te).size()/2.0;
+            else if (g.path_exists(tL,te)) dLe = g.distance(tL,te);
             //else dLe = g.get_num_nodes()*2;
 
             double deR = -1;
             if (bptf.get_relation(te,tR)==behavioral_profile::INTERLEAVED) deR = 0;
-            else if (g.path_exists(te,tR)) deR = g.path(te,tR).size()/2.0;
+            else if (g.path_exists(te,tR)) deR = g.distance(te,tR);
             //else deR = g.get_num_nodes()*2;
             
             TRACE(5, "checking Dummy compatibility constraint "<<tL<<"-["<<te<<"]-"<<tR<<" "<<dLR<<" "<<dLe<<" "<<deR );

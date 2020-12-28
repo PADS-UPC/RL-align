@@ -279,7 +279,7 @@ void output_path_matrix(ostream &sout, const graph &g, const map<string,list<str
       if (pij != paths.end()) {
         for (auto p : pij->second) {
             s +=  " " + p;
-            ++nn;
+            if (p[0]=='e') ++nn;  // count #transitions in path.
         }
         // remove last node in the sequence (just a repetition of targ)           
 
@@ -287,7 +287,7 @@ void output_path_matrix(ostream &sout, const graph &g, const map<string,list<str
         s = s.substr(0,k);
       }
 
-      sout << "PATH " << i << " " << j << " " << nn-1 << s << endl;
+      sout << "PATH " << i << " " << j << " " << (nn==0 ? -1 : nn)  << s << endl;
     }
   }
 }
